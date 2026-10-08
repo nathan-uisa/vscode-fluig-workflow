@@ -1117,18 +1117,18 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
       <span class="badge">v${data.version}</span>
 
       <div class="mode-switcher">
-        <button id="btnModeModeler" class="mode-btn active" onclick="switchMode('modeler')">✏️ Modelador BPMN</button>
-        <button id="btnModeSvg" class="mode-btn" onclick="switchMode('svg')">👁️ SVG Fluig Servidor</button>
+        <button id="btnModeModeler" class="mode-btn active" onclick="switchMode('modeler')">Modelador BPMN</button>
+        <button id="btnModeSvg" class="mode-btn" onclick="switchMode('svg')">Visualizar SVG</button>
       </div>
     </div>
 
     <div class="header-controls">
-      <button class="save-btn" onclick="saveDiagram()" title="Salvar BPMN, SVG e ECM30 (Ctrl+S)">💾 Salvar Processo</button>
-      <button onclick="exportProcess()" title="Publicar diretamente no servidor Fluig">▲ Exportar para Fluig</button>
-      <button class="secondary" onclick="applyFluigColors()" title="Reaplicar paleta oficial de cores Fluig a todos os elementos">🎨 Cores Fluig</button>
+      <button class="save-btn" onclick="saveDiagram()" title="Salvar BPMN, SVG e ECM30 (Ctrl+S)">Salvar Processo</button>
+      <button onclick="exportProcess()" title="Publicar diretamente no servidor Fluig">Exportar para Fluig</button>
+      <button class="secondary" onclick="applyFluigColors()" title="Reaplicar paleta oficial de cores Fluig a todos os elementos">Cores Fluig</button>
       <button class="secondary" onclick="createEventScript()">+ Script de Evento</button>
       <button class="secondary" onclick="openTextFile('${data.processPath || ''}')">Ver .process</button>
-      <button class="secondary" onclick="refresh()">↻</button>
+      <button class="secondary" onclick="refresh()">Atualizar</button>
     </div>
   </div>
 
@@ -1190,7 +1190,7 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
           ${data.existingScripts.map(sc => `
             <div class="list-item">
               <div>
-                <div class="list-item-title">📄 ${sc.name}</div>
+                <div class="list-item-title">${sc.name}</div>
                 <div class="list-item-sub">${(sc.size / 1024).toFixed(1)} KB</div>
               </div>
               <button class="secondary" style="font-size:11px; padding:3px 6px;" onclick="openScript('${sc.name}')">
@@ -1206,10 +1206,10 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
         <div class="section-header">Artefatos do Projeto</div>
         <div style="display:flex; flex-direction:column; gap:6px;">
           <button class="secondary" style="justify-content: flex-start;" onclick="openTextFile('${data.processPath || ''}')">
-            📄 Código BPMN (.process)
+            Código BPMN (.process)
           </button>
           <button class="secondary" style="justify-content: flex-start;" onclick="openTextFile('${data.ecm30Path || ''}')">
-            📦 Artefato ECM30 (.ecm30.xml)
+            Artefato ECM30 (.ecm30.xml)
           </button>
         </div>
       </div>
@@ -1314,7 +1314,7 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
         serviceBtnHtml = \`
           <div style="margin-top: 10px;">
             <button class="secondary" style="width:100%; justify-content:center;" onclick="createOrOpenServiceScript('\${element.id}', '\${name}')">
-              ⚙️ Abrir / Criar Script de Serviço
+              Abrir / Criar Script de Serviço
             </button>
           </div>
         \`;

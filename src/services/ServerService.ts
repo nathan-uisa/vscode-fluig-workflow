@@ -186,7 +186,7 @@ export class ServerService {
     const items = servers.map(s => ({
       label: s.name,
       description: `${s.baseUrl} (Empresa: ${s.companyId})`,
-      detail: s.id === activeId ? '★ Ativo' : '',
+      detail: s.id === activeId ? '[Ativo]' : '',
       server: s
     }));
 

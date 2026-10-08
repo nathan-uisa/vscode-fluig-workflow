@@ -2,7 +2,7 @@
   "name": "vscode-fluig-workflow",
   "displayName": "Fluig Workflow Manager",
   "description": "Extensão VS Code para sincronização, importação e exportação de processos TOTVS Fluig",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "nathan-uisa",
   "repository": {
     "type": "git",
@@ -31,6 +31,7 @@
     "onCommand:fluigWorkflow.addServer",
     "onCommand:fluigWorkflow.selectServer",
     "onCommand:fluigWorkflow.generateEcm30",
+    "onCommand:fluigWorkflow.viewDiagram",
     "workspaceContains:**/workflow/diagrams/*.process"
   ],
   "main": "./out/extension.js",
@@ -96,9 +97,22 @@
         "command": "fluigWorkflow.generateEcm30",
         "title": "Gerar Artefatos ECM30 e SVG",
         "category": "Fluig Workflow"
+      },
+      {
+        "command": "fluigWorkflow.viewDiagram",
+        "title": "Visualizar Diagrama de Processo (BPMN/SVG)",
+        "category": "Fluig Workflow",
+        "icon": "$(file-media)"
       }
     ],
     "menus": {
+      "editor/title": [
+        {
+          "command": "fluigWorkflow.viewDiagram",
+          "when": "resourceExtname == .process || resourceExtname == .svg",
+          "group": "navigation"
+        }
+      ],
       "view/title": [
         {
           "command": "fluigWorkflow.addServer",
@@ -126,9 +140,19 @@
           "command": "fluigWorkflow.importProcess",
           "when": "view == fluigWorkflowProcesses && viewItem == processItem",
           "group": "inline"
+        },
+        {
+          "command": "fluigWorkflow.viewDiagram",
+          "when": "view == fluigWorkflowProcesses && viewItem == processItem",
+          "group": "inline"
         }
       ],
       "editor/context": [
+        {
+          "command": "fluigWorkflow.viewDiagram",
+          "when": "resourceExtname == .process || resourceExtname == .svg",
+          "group": "fluig"
+        },
         {
           "command": "fluigWorkflow.exportProcess",
           "when": "resourceExtname == .process",
@@ -141,6 +165,11 @@
         }
       ],
       "explorer/context": [
+        {
+          "command": "fluigWorkflow.viewDiagram",
+          "when": "resourceExtname == .process || resourceExtname == .svg || resourceExtname == .xml",
+          "group": "fluig"
+        },
         {
           "command": "fluigWorkflow.exportProcess",
           "when": "resourceExtname == .process",

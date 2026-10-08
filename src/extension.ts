@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { ServerService } from './services/ServerService';
 import { ProcessExportService } from './services/ProcessExportService';
 import { ProcessImportService } from './services/ProcessImportService';
 import { Ecm30GeneratorService } from './services/Ecm30GeneratorService';
+import { DiagramViewerService } from './services/DiagramViewerService';
 import { ServerTreeProvider, ServerTreeItem } from './views/ServerTreeProvider';
 import { ProcessTreeProvider, ProcessTreeItem } from './views/ProcessTreeProvider';
 
@@ -136,6 +138,47 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  // 8. Visualizar Diagrama BPMN/SVG
+  const viewDiagramCmd = vscode.commands.registerCommand('fluigWorkflow.viewDiagram', async (target?: any) => {
+    let targetArg = target;
+    if (targetArg && typeof targetArg === 'object' && 'process' in targetArg && targetArg.process?.processId) {
+      targetArg = targetArg.process.processId;
+    }
+    if (!targetArg) {
+      const activeDoc = vscode.window.activeTextEditor?.document.uri;
+      if (activeDoc && (activeDoc.fsPath.endsWith('.process') || activeDoc.fsPath.endsWith('.svg') || activeDoc.fsPath.endsWith('.ecm30.xml'))) {
+        targetArg = activeDoc;
+      } else {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (workspaceFolder) {
+          const diagramsDir = path.join(workspaceFolder.uri.fsPath, 'workflow', 'diagrams');
+          if (fs.existsSync(diagramsDir)) {
+            const files = fs.readdirSync(diagramsDir);
+            const processIds = Array.from(new Set(
+              files
+                .filter(f => f.endsWith('.process') || f.endsWith('.svg') || f.endsWith('.ecm30.xml'))
+                .map(f => f.replace(/\.(process|svg|ecm30\.xml)$/, ''))
+            ));
+
+            if (processIds.length > 0) {
+              const picked = await vscode.window.showQuickPick(
+                processIds.map(id => ({ label: id, description: `workflow/diagrams/${id}` })),
+                { placeHolder: 'Selecione o processo para visualizar o diagrama' }
+              );
+              if (picked) targetArg = picked.label;
+            }
+          }
+        }
+      }
+    }
+
+    if (targetArg) {
+      await DiagramViewerService.openDiagram(targetArg);
+    } else {
+      vscode.window.showWarningMessage('Nenhum processo selecionado para visualização.');
+    }
+  });
+
   // Auto-geração de artefatos ao salvar arquivo .process
   const onSaveListener = vscode.workspace.onDidSaveTextDocument(document => {
     if (document.fileName.endsWith('.process')) {
@@ -162,6 +205,7 @@ export function activate(context: vscode.ExtensionContext) {
     importProcessCmd,
     exportProcessCmd,
     generateEcm30Cmd,
+    viewDiagramCmd,
     onSaveListener
   );
 }

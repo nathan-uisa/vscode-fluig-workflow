@@ -190,9 +190,8 @@ export class ProcessImportService {
           'Abrir Diagrama'
         );
 
-        if (action === 'Abrir Diagrama' && fs.existsSync(result.processFilePath)) {
-          const doc = await vscode.workspace.openTextDocument(result.processFilePath);
-          await vscode.window.showTextDocument(doc);
+        if (action === 'Abrir Diagrama') {
+          await vscode.commands.executeCommand('fluigWorkflow.viewDiagram', result.processFilePath);
         }
       }
     } catch (error: any) {

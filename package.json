@@ -4,6 +4,11 @@
   "description": "Extensão VS Code para sincronização, importação e exportação de processos TOTVS Fluig",
   "version": "0.1.0",
   "publisher": "nathan-uisa",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nathan-uisa/vscode-fluig-workflow.git"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.80.0"
   },

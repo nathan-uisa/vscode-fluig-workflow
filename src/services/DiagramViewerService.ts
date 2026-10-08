@@ -1137,7 +1137,6 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
     <div class="header-controls">
       <button class="save-btn" onclick="saveDiagram()" title="Salvar BPMN, SVG e ECM30 (Ctrl+S)">Salvar Processo</button>
       <button onclick="exportProcess()" title="Publicar diretamente no servidor Fluig">Exportar para Fluig</button>
-      <button class="secondary" onclick="applyFluigColors()" title="Reaplicar paleta oficial de cores Fluig a todos os elementos">Cores Fluig</button>
       <button class="secondary" onclick="createEventScript()">+ Script de Evento</button>
       <button class="secondary" onclick="openTextFile('${data.processPath || ''}')">Ver .process</button>
       <button class="secondary" onclick="refresh()">Atualizar</button>

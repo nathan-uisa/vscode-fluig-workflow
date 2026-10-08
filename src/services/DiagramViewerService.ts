@@ -381,7 +381,7 @@ function servicetask(attempt, message) {
       return this.createInitialBpmn2Xml(processId, processId);
     }
 
-    let header = '<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI"';
+    let header = '<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0"';
 
     const tagOpenMatch = defMatch[0].match(/<bpmn2?:definitions([^>]*)>/);
     if (tagOpenMatch) {
@@ -397,7 +397,74 @@ function servicetask(attempt, message) {
 
     let body = defMatch[0].substring(defMatch[0].indexOf('>') + 1, defMatch[0].lastIndexOf('</'));
     body = this.repairWaypoints(body);
+    body = this.injectFluigColors(body);
     return `<?xml version="1.0" encoding="UTF-8"?>\n${header}\n${body}\n</bpmn2:definitions>`;
+  }
+
+  /**
+   * Retorna as cores padrão Fluig (borda e preenchimento) para um determinado tipo de elemento BPMN
+   */
+  public static getFluigColorsForTag(tag: string): { stroke: string; fill: string } | null {
+    const t = tag.toLowerCase();
+    if (t.includes('startevent')) {
+      return { stroke: '#336633', fill: '#b6ffb6' };
+    }
+    if (t.includes('endevent')) {
+      return { stroke: '#993333', fill: '#ffb6b6' };
+    }
+    if (t.includes('intermediate') || t.includes('boundary')) {
+      return { stroke: '#999900', fill: '#ffffb6' };
+    }
+    if (t.includes('gateway')) {
+      return { stroke: '#b25900', fill: '#ffe8b3' };
+    }
+    if (t.includes('task')) {
+      return { stroke: '#191970', fill: '#deedfa' };
+    }
+    if (t.includes('subprocess') || t.includes('callactivity')) {
+      return { stroke: '#191970', fill: '#f0f8ff' };
+    }
+    if (t.includes('participant') || t.includes('lane')) {
+      return { stroke: '#555555', fill: '#ffffff' };
+    }
+    return null;
+  }
+
+  /**
+   * Injeta atributos bioc:stroke e bioc:fill em formas BPMN que ainda não possuam cores definidas
+   */
+  private static injectFluigColors(body: string): string {
+    const elemTypes: Record<string, string> = {};
+    const elemRegex = /<bpmn2?:([a-zA-Z0-9_]+)\b([^>]*)>/g;
+    let match: RegExpExecArray | null;
+    while ((match = elemRegex.exec(body)) !== null) {
+      const tag = match[1];
+      const attrs = match[2];
+      const idMatch = attrs.match(/\bid=["']([^"']+)["']/);
+      if (idMatch && tag !== 'process' && tag !== 'definitions' && tag !== 'sequenceFlow') {
+        elemTypes[idMatch[1]] = tag;
+      }
+    }
+
+    body = body.replace(/<bpmndi:BPMNShape\b([^>]*)>/g, (fullMatch, attrs) => {
+      if (attrs.includes('bioc:stroke') || attrs.includes('bioc:fill')) {
+        return fullMatch;
+      }
+
+      const elemIdMatch = attrs.match(/\bbpmnElement=["']([^"']+)["']/);
+      if (!elemIdMatch) return fullMatch;
+
+      const elemId = elemIdMatch[1];
+      const elemType = elemTypes[elemId];
+      if (!elemType) return fullMatch;
+
+      const colors = this.getFluigColorsForTag(elemType);
+      if (!colors) return fullMatch;
+
+      return `<bpmndi:BPMNShape ${attrs.trim()} bioc:stroke="${colors.stroke}" bioc:fill="${colors.fill}" color:border-color="${colors.stroke}" color:background-color="${colors.fill}">`;
+    });
+
+    return body;
   }
 
   public static calculateWaypoints(
@@ -550,7 +617,7 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
       .replace(/<bpmn:/g, '<bpmn2:')
       .replace(/<\/bpmn:/g, '</bpmn2:');
 
-    return `<?xml version="1.0" encoding="ASCII"?>\n<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">\n  ${content}\n</xmi:XMI>\n`;
+    return `<?xml version="1.0" encoding="ASCII"?>\n<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0">\n  ${content}\n</xmi:XMI>\n`;
   }
 
   private static escapeXml(str: string): string {
@@ -564,7 +631,7 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
 
   private static createInitialBpmn2Xml(processId: string, processName: string): string {
     return `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://www.fluig.com/bpm">
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" id="Definitions_1" targetNamespace="http://www.fluig.com/bpm">
   <bpmn2:process id="${processId}" name="${processName}" isExecutable="true">
     <bpmn2:startEvent id="startevent1" name="Início">
       <bpmn2:outgoing>flow1</bpmn2:outgoing>
@@ -581,13 +648,13 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
   </bpmn2:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1" name="${processName}">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${processId}">
-      <bpmndi:BPMNShape id="BPMNShape_startevent1" bpmnElement="startevent1">
+      <bpmndi:BPMNShape id="BPMNShape_startevent1" bpmnElement="startevent1" bioc:stroke="#336633" bioc:fill="#b6ffb6" color:border-color="#336633" color:background-color="#b6ffb6">
         <dc:Bounds height="36.0" width="36.0" x="180.0" y="160.0"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_usertask2" bpmnElement="usertask2">
+      <bpmndi:BPMNShape id="BPMNShape_usertask2" bpmnElement="usertask2" bioc:stroke="#191970" bioc:fill="#deedfa" color:border-color="#191970" color:background-color="#deedfa">
         <dc:Bounds height="80.0" width="100.0" x="280.0" y="138.0"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_endevent3" bpmnElement="endevent3">
+      <bpmndi:BPMNShape id="BPMNShape_endevent3" bpmnElement="endevent3" bioc:stroke="#993333" bioc:fill="#ffb6b6" color:border-color="#993333" color:background-color="#ffb6b6">
         <dc:Bounds height="36.0" width="36.0" x="450.0" y="160.0"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="BPMNEdge_flow1" bpmnElement="flow1">
@@ -1015,6 +1082,24 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
       animation: fadeIn 0.2s;
     }
 
+    .color-preset-circle {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2);
+      padding: 0;
+      cursor: pointer;
+      display: inline-block;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+
+    .color-preset-circle:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 6px rgba(255,255,255,0.5);
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-8px); }
       to { opacity: 1; transform: translateY(0); }
@@ -1040,6 +1125,7 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
     <div class="header-controls">
       <button class="save-btn" onclick="saveDiagram()" title="Salvar BPMN, SVG e ECM30 (Ctrl+S)">💾 Salvar Processo</button>
       <button onclick="exportProcess()" title="Publicar diretamente no servidor Fluig">▲ Exportar para Fluig</button>
+      <button class="secondary" onclick="applyFluigColors()" title="Reaplicar paleta oficial de cores Fluig a todos os elementos">🎨 Cores Fluig</button>
       <button class="secondary" onclick="createEventScript()">+ Script de Evento</button>
       <button class="secondary" onclick="openTextFile('${data.processPath || ''}')">Ver .process</button>
       <button class="secondary" onclick="refresh()">↻</button>
@@ -1186,6 +1272,21 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
           }
         });
 
+        // Auto-colorir novas formas adicionadas da paleta com a paleta oficial Fluig
+        eventBus.on('commandStack.shape.create.postExecuted', (e) => {
+          const shape = e.context && e.context.shape;
+          if (!shape) return;
+          setTimeout(() => {
+            try {
+              const colors = getFluigColorsForType(shape.type);
+              if (colors && modeler) {
+                const modeling = modeler.get('modeling');
+                modeling.setColor(shape, colors);
+              }
+            } catch (err) {}
+          }, 0);
+        });
+
       } catch (err) {
         console.error('Falha ao inicializar BPMN Modeler:', err);
       }
@@ -1205,6 +1306,8 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
       const name = bo.name || '(Sem nome)';
       const type = element.type || 'Elemento';
       const isServiceTask = type.includes('ServiceTask');
+      const isFlow = type.includes('SequenceFlow') || type.includes('Flow');
+      const colors = getElementColors(element);
 
       let serviceBtnHtml = '';
       if (isServiceTask) {
@@ -1213,6 +1316,53 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
             <button class="secondary" style="width:100%; justify-content:center;" onclick="createOrOpenServiceScript('\${element.id}', '\${name}')">
               ⚙️ Abrir / Criar Script de Serviço
             </button>
+          </div>
+        \`;
+      }
+
+      let colorControlsHtml = '';
+      if (isFlow) {
+        colorControlsHtml = \`
+          <div class="form-group" style="margin-top: 12px; margin-bottom: 6px;">
+            <label style="font-weight:600; margin-bottom:6px;">Cor da Linha / Fluxo</label>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+              <button type="button" class="color-preset-circle" title="Preto Padrão" onclick="setElementColor(null, '#333333')" style="background:#333333;"></button>
+              <button type="button" class="color-preset-circle" title="Fluig Azul" onclick="setElementColor(null, '#191970')" style="background:#191970;"></button>
+              <button type="button" class="color-preset-circle" title="Fluig Verde" onclick="setElementColor(null, '#336633')" style="background:#336633;"></button>
+              <button type="button" class="color-preset-circle" title="Fluig Vermelho" onclick="setElementColor(null, '#993333')" style="background:#993333;"></button>
+              <button type="button" class="color-preset-circle" title="Fluig Laranja" onclick="setElementColor(null, '#b25900')" style="background:#b25900;"></button>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label style="margin:0; font-size:11px;">Cor personalizada:</label>
+              <input type="color" id="elemStrokePicker" value="\${colors.stroke}" oninput="onCustomColorChange()" style="width:32px; height:24px; padding:0; border:1px solid var(--border); border-radius:3px; cursor:pointer; background:transparent;">
+            </div>
+          </div>
+        \`;
+      } else {
+        colorControlsHtml = \`
+          <div class="form-group" style="margin-top: 12px; margin-bottom: 6px;">
+            <label style="font-weight:600; margin-bottom:6px;">Paleta de Cores</label>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+              <button type="button" class="color-preset-circle" title="Fluig Verde (Início)" onclick="setElementColor('#b6ffb6', '#336633')" style="background:#b6ffb6; border:2px solid #336633;"></button>
+              <button type="button" class="color-preset-circle" title="Fluig Vermelho (Fim)" onclick="setElementColor('#ffb6b6', '#993333')" style="background:#ffb6b6; border:2px solid #993333;"></button>
+              <button type="button" class="color-preset-circle" title="Fluig Azul (Tarefa)" onclick="setElementColor('#deedfa', '#191970')" style="background:#deedfa; border:2px solid #191970;"></button>
+              <button type="button" class="color-preset-circle" title="Fluig Laranja (Gateway)" onclick="setElementColor('#ffe8b3', '#b25900')" style="background:#ffe8b3; border:2px solid #b25900;"></button>
+              <button type="button" class="color-preset-circle" title="Fluig Amarelo (Intermediário)" onclick="setElementColor('#ffffb6', '#999900')" style="background:#ffffb6; border:2px solid #999900;"></button>
+              <button type="button" class="color-preset-circle" title="Fluig Lilás/Roxo" onclick="setElementColor('#e8e0f5', '#5e35b1')" style="background:#e8e0f5; border:2px solid #5e35b1;"></button>
+              <button type="button" class="color-preset-circle" title="Cinza Suave" onclick="setElementColor('#f0f0f0', '#555555')" style="background:#f0f0f0; border:2px solid #555555;"></button>
+              <button type="button" class="color-preset-circle" title="Branco / Neutro" onclick="setElementColor('#ffffff', '#222222')" style="background:#ffffff; border:2px solid #222222;"></button>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+              <div style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                <label style="margin:0; font-size:11px;">Fundo:</label>
+                <input type="color" id="elemFillPicker" value="\${colors.fill}" oninput="onCustomColorChange()" style="width:28px; height:24px; padding:0; border:1px solid var(--border); border-radius:3px; cursor:pointer; background:transparent;">
+              </div>
+              <div style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                <label style="margin:0; font-size:11px;">Borda:</label>
+                <input type="color" id="elemStrokePicker" value="\${colors.stroke}" oninput="onCustomColorChange()" style="width:28px; height:24px; padding:0; border:1px solid var(--border); border-radius:3px; cursor:pointer; background:transparent;">
+              </div>
+              <button type="button" class="secondary" style="font-size:11px; padding:3px 6px; margin-left:auto;" onclick="applyDefaultColorToSelected()" title="Restaurar cor padrão Fluig para este tipo">Fluig Padrão</button>
+            </div>
           </div>
         \`;
       }
@@ -1228,9 +1378,168 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
             <label>Nome / Rótulo</label>
             <input type="text" value="\${name}" oninput="updateElementName(this.value)">
           </div>
+          \${colorControlsHtml}
           \${serviceBtnHtml}
         </div>
       \`;
+    }
+
+    function getFluigColorsForType(type) {
+      const t = (type || '').toLowerCase();
+      if (t.includes('startevent')) {
+        return { fill: '#b6ffb6', stroke: '#336633' };
+      }
+      if (t.includes('endevent')) {
+        return { fill: '#ffb6b6', stroke: '#993333' };
+      }
+      if (t.includes('intermediate') || t.includes('boundary')) {
+        return { fill: '#ffffb6', stroke: '#999900' };
+      }
+      if (t.includes('gateway')) {
+        return { fill: '#ffe8b3', stroke: '#b25900' };
+      }
+      if (t.includes('task')) {
+        return { fill: '#deedfa', stroke: '#191970' };
+      }
+      if (t.includes('subprocess') || t.includes('callactivity')) {
+        return { fill: '#f0f8ff', stroke: '#191970' };
+      }
+      if (t.includes('participant') || t.includes('lane')) {
+        return { fill: '#ffffff', stroke: '#555555' };
+      }
+      if (t.includes('sequenceflow')) {
+        return { stroke: '#333333' };
+      }
+      return null;
+    }
+
+    function normalizeColorToHex(colorStr, fallbackHex) {
+      if (!colorStr) return fallbackHex;
+      const s = colorStr.trim();
+      if (s.startsWith('#')) {
+        if (s.length === 4) {
+          return '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+        }
+        return s;
+      }
+      if (s.startsWith('rgb')) {
+        const m = s.match(/\\d+/g);
+        if (m && m.length >= 3) {
+          const r = parseInt(m[0], 10).toString(16).padStart(2, '0');
+          const g = parseInt(m[1], 10).toString(16).padStart(2, '0');
+          const b = parseInt(m[2], 10).toString(16).padStart(2, '0');
+          return '#' + r + g + b;
+        }
+      }
+      return fallbackHex;
+    }
+
+    function getElementColors(element) {
+      if (!element) return { fill: '#ffffff', stroke: '#222222' };
+      const std = getFluigColorsForType(element.type);
+      let fill = null;
+      let stroke = null;
+
+      const di = element.di || element.businessObject?.di;
+      if (di) {
+        try {
+          fill = di.fill || (di.get && (di.get('bioc:fill') || di.get('color:background-color')));
+          stroke = di.stroke || (di.get && (di.get('bioc:stroke') || di.get('color:border-color')));
+        } catch (e) {}
+      }
+
+      if ((!fill || !stroke) && modeler) {
+        try {
+          const gfx = modeler.get('elementRegistry').getGraphics(element);
+          if (gfx) {
+            const visual = gfx.querySelector('.djs-visual > *:not(text)');
+            if (visual) {
+              if (!fill) fill = visual.getAttribute('fill') || visual.style.fill;
+              if (!stroke) stroke = visual.getAttribute('stroke') || visual.style.stroke;
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (!fill || fill === 'none' || fill === 'transparent') {
+        fill = (std && std.fill) ? std.fill : '#ffffff';
+      }
+      if (!stroke || stroke === 'none') {
+        stroke = (std && std.stroke) ? std.stroke : '#222222';
+      }
+
+      fill = normalizeColorToHex(fill, (std && std.fill) || '#ffffff');
+      stroke = normalizeColorToHex(stroke, (std && std.stroke) || '#222222');
+
+      return { fill, stroke };
+    }
+
+    function setElementColor(fill, stroke) {
+      if (!modeler) return;
+      const selection = modeler.get('selection').get();
+      const targets = (selection && selection.length > 0) ? selection : (selectedElement ? [selectedElement] : []);
+      if (targets.length === 0) return;
+
+      try {
+        const modeling = modeler.get('modeling');
+        const colorObj = {};
+        if (stroke) colorObj.stroke = stroke;
+        if (fill) colorObj.fill = fill;
+        modeling.setColor(targets, colorObj);
+
+        const fillInput = document.getElementById('elemFillPicker');
+        const strokeInput = document.getElementById('elemStrokePicker');
+        if (fillInput && fill) fillInput.value = normalizeColorToHex(fill, fillInput.value);
+        if (strokeInput && stroke) strokeInput.value = normalizeColorToHex(stroke, strokeInput.value);
+      } catch (err) {
+        console.error('Erro ao definir cor do elemento:', err);
+      }
+    }
+
+    function onCustomColorChange() {
+      const fillInput = document.getElementById('elemFillPicker');
+      const strokeInput = document.getElementById('elemStrokePicker');
+      const fill = fillInput ? fillInput.value : null;
+      const stroke = strokeInput ? strokeInput.value : null;
+      setElementColor(fill, stroke);
+    }
+
+    function applyDefaultColorToSelected() {
+      if (!selectedElement) return;
+      const colors = getFluigColorsForType(selectedElement.type);
+      if (colors) {
+        setElementColor(colors.fill, colors.stroke);
+      }
+    }
+
+    function applyFluigColors() {
+      if (!modeler) return;
+      try {
+        const elementRegistry = modeler.get('elementRegistry');
+        const modeling = modeler.get('modeling');
+        const allElements = elementRegistry.getAll();
+
+        let count = 0;
+        allElements.forEach(elem => {
+          if (elem.type === 'bpmn:Process' || elem.type === 'bpmn:Collaboration') return;
+          const colors = getFluigColorsForType(elem.type);
+          if (colors && colors.fill) {
+            modeling.setColor(elem, colors);
+            count++;
+          }
+        });
+
+        const toast = document.getElementById('toast');
+        toast.innerText = 'Cores Fluig aplicadas a ' + count + ' elementos!';
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2500);
+
+        if (selectedElement) {
+          renderSelectedElement(selectedElement);
+        }
+      } catch (err) {
+        console.error('Erro ao aplicar cores Fluig:', err);
+      }
     }
 
     function updateElementName(newName) {
@@ -1264,6 +1573,10 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
         try {
           const svgResult = await modeler.saveSVG();
           svg = svgResult.svg;
+          const svgBox = document.getElementById('svgContentBox');
+          if (svgBox && svg) {
+            svgBox.innerHTML = svg;
+          }
         } catch (svgErr) {
           console.warn('Não foi possível gerar SVG:', svgErr);
         }

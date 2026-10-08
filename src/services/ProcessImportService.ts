@@ -314,7 +314,8 @@ export class ProcessImportService {
 
     let diShapesXml = '';
     states.forEach(st => {
-      diShapesXml += `      <bpmndi:BPMNShape id="BPMNShape_${st.id}" bpmnElement="${st.id}">
+      const colors = DiagramViewerService.getFluigColorsForTag(st.elemType) || { stroke: '#191970', fill: '#deedfa' };
+      diShapesXml += `      <bpmndi:BPMNShape id="BPMNShape_${st.id}" bpmnElement="${st.id}" bioc:stroke="${colors.stroke}" bioc:fill="${colors.fill}" color:border-color="${colors.stroke}" color:background-color="${colors.fill}">
         <dc:Bounds height="${st.height}.0" width="${st.width}.0" x="${st.x}.0" y="${st.y}.0"/>
       </bpmndi:BPMNShape>\n`;
     });
@@ -337,7 +338,7 @@ export class ProcessImportService {
     });
 
     return `<?xml version="1.0" encoding="ASCII"?>
-<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0">
   <bpmn2:definitions id="Definitions_1" targetNamespace="http://www.fluig.com/bpm">
     <bpmn2:process id="${this.escapeXml(processId)}" name="${this.escapeXml(processDesc)}" isExecutable="true">
 ${elementsXml}    </bpmn2:process>
@@ -364,7 +365,7 @@ ${diShapesXml}${diShapesXml ? '' : '      '}${links.length > 0 ? '' : ''}      <
 
   private createDefaultProcessXmi(processId: string, processDescription: string): string {
     return `<?xml version="1.0" encoding="ASCII"?>
-<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0">
   <bpmn2:definitions id="Definitions_1" targetNamespace="http://www.fluig.com/bpm">
     <bpmn2:process id="${this.escapeXml(processId)}" name="${this.escapeXml(processDescription)}" isExecutable="true">
       <bpmn2:startEvent id="startevent_1" name="Início">
@@ -380,6 +381,27 @@ ${diShapesXml}${diShapesXml ? '' : '      '}${links.length > 0 ? '' : ''}      <
       <bpmn2:sequenceFlow id="flow_1" sourceRef="startevent_1" targetRef="usertask_1"/>
       <bpmn2:sequenceFlow id="flow_2" sourceRef="usertask_1" targetRef="endevent_1"/>
     </bpmn2:process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_1" name="${this.escapeXml(processDescription)}">
+      <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${this.escapeXml(processId)}">
+        <bpmndi:BPMNShape id="BPMNShape_startevent_1" bpmnElement="startevent_1" bioc:stroke="#336633" bioc:fill="#b6ffb6" color:border-color="#336633" color:background-color="#b6ffb6">
+          <dc:Bounds height="36.0" width="36.0" x="180.0" y="160.0"/>
+        </bpmndi:BPMNShape>
+        <bpmndi:BPMNShape id="BPMNShape_usertask_1" bpmnElement="usertask_1" bioc:stroke="#191970" bioc:fill="#deedfa" color:border-color="#191970" color:background-color="#deedfa">
+          <dc:Bounds height="80.0" width="100.0" x="280.0" y="138.0"/>
+        </bpmndi:BPMNShape>
+        <bpmndi:BPMNShape id="BPMNShape_endevent_1" bpmnElement="endevent_1" bioc:stroke="#993333" bioc:fill="#ffb6b6" color:border-color="#993333" color:background-color="#ffb6b6">
+          <dc:Bounds height="36.0" width="36.0" x="450.0" y="160.0"/>
+        </bpmndi:BPMNShape>
+        <bpmndi:BPMNEdge id="BPMNEdge_flow_1" bpmnElement="flow_1">
+          <di:waypoint x="216.0" y="178.0"/>
+          <di:waypoint x="280.0" y="178.0"/>
+        </bpmndi:BPMNEdge>
+        <bpmndi:BPMNEdge id="BPMNEdge_flow_2" bpmnElement="flow_2">
+          <di:waypoint x="380.0" y="178.0"/>
+          <di:waypoint x="450.0" y="178.0"/>
+        </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
   </bpmn2:definitions>
 </xmi:XMI>`;
   }

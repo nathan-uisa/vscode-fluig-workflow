@@ -1,0 +1,192 @@
+{
+  "name": "vscode-fluig-workflow",
+  "displayName": "Fluig Workflow Manager",
+  "description": "Extensão VS Code para sincronização, importação e exportação de processos TOTVS Fluig",
+  "version": "0.1.0",
+  "publisher": "nathan-uisa",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages",
+    "Snippets"
+  ],
+  "keywords": [
+    "fluig",
+    "totvs",
+    "workflow",
+    "bpm",
+    "process"
+  ],
+  "activationEvents": [
+    "onCommand:fluigWorkflow.exportProcess",
+    "onCommand:fluigWorkflow.importProcess",
+    "onCommand:fluigWorkflow.listProcesses",
+    "onCommand:fluigWorkflow.addServer",
+    "onCommand:fluigWorkflow.selectServer",
+    "onCommand:fluigWorkflow.generateEcm30",
+    "workspaceContains:**/workflow/diagrams/*.process"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "fluig-workflow-explorer",
+          "title": "Fluig Workflow",
+          "icon": "resources/fluig-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "fluig-workflow-explorer": [
+        {
+          "id": "fluigWorkflowServers",
+          "name": "Servidores Fluig"
+        },
+        {
+          "id": "fluigWorkflowProcesses",
+          "name": "Processos do Servidor"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "fluigWorkflow.addServer",
+        "title": "Adicionar Servidor",
+        "category": "Fluig Workflow",
+        "icon": "$(add)"
+      },
+      {
+        "command": "fluigWorkflow.selectServer",
+        "title": "Selecionar Servidor Ativo",
+        "category": "Fluig Workflow"
+      },
+      {
+        "command": "fluigWorkflow.removeServer",
+        "title": "Remover Servidor",
+        "category": "Fluig Workflow",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "fluigWorkflow.listProcesses",
+        "title": "Listar Processos do Servidor",
+        "category": "Fluig Workflow",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "fluigWorkflow.importProcess",
+        "title": "Importar Processo do Servidor...",
+        "category": "Fluig Workflow",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "fluigWorkflow.exportProcess",
+        "title": "Exportar Processo para o Servidor",
+        "category": "Fluig Workflow",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "fluigWorkflow.generateEcm30",
+        "title": "Gerar Artefatos ECM30 e SVG",
+        "category": "Fluig Workflow"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "fluigWorkflow.addServer",
+          "when": "view == fluigWorkflowServers",
+          "group": "navigation"
+        },
+        {
+          "command": "fluigWorkflow.listProcesses",
+          "when": "view == fluigWorkflowProcesses",
+          "group": "navigation"
+        },
+        {
+          "command": "fluigWorkflow.importProcess",
+          "when": "view == fluigWorkflowProcesses",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "fluigWorkflow.removeServer",
+          "when": "view == fluigWorkflowServers && viewItem == serverItem",
+          "group": "inline"
+        },
+        {
+          "command": "fluigWorkflow.importProcess",
+          "when": "view == fluigWorkflowProcesses && viewItem == processItem",
+          "group": "inline"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "fluigWorkflow.exportProcess",
+          "when": "resourceExtname == .process",
+          "group": "fluig"
+        },
+        {
+          "command": "fluigWorkflow.generateEcm30",
+          "when": "resourceExtname == .process",
+          "group": "fluig"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "fluigWorkflow.exportProcess",
+          "when": "resourceExtname == .process",
+          "group": "fluig"
+        },
+        {
+          "command": "fluigWorkflow.generateEcm30",
+          "when": "resourceExtname == .process",
+          "group": "fluig"
+        },
+        {
+          "command": "fluigWorkflow.importProcess",
+          "group": "fluig"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Fluig Workflow",
+      "properties": {
+        "fluigWorkflow.autoGenerateEcm30OnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Gera automaticamente o artefato ECM30 e SVG ao salvar um arquivo .process"
+        },
+        "fluigWorkflow.defaultRelease": {
+          "type": "boolean",
+          "default": true,
+          "description": "Se verdadeiro, libera a nova versão do processo imediatamente ao exportar"
+        },
+        "fluigWorkflow.javaExecutablePath": {
+          "type": "string",
+          "default": "",
+          "description": "Caminho opcional para o executável Java (caso não esteja no PATH)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build": "tsc -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/sax": "^1.2.7",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "sax": "^1.3.0"
+  }
+}

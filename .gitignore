@@ -7,3 +7,4 @@ node_modules
 *.log
 .env
 .vscode/fluig-servers.local.json
+test-connection.js

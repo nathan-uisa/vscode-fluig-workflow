@@ -18,7 +18,7 @@ export class WorkflowSoapService {
   ): Promise<string> {
     const url = `${this.server.baseUrl}${servicePath}`;
     const envelope = `<?xml version="1.0" encoding="utf-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ws="http://ws.workflow.ecm.technology.totvs.com/" xmlns:tok="http://ws.dm.ecm.technology.totvs.com/">
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ws="http://ws.workflow.webdesk.technology.datasul.com/" xmlns:tok="http://ws.dm.webdesk.technology.datasul.com/">
   <soapenv:Header/>
   <soapenv:Body>
     ${bodyXml}
@@ -55,6 +55,24 @@ export class WorkflowSoapService {
     const login = this.server.username;
     const password = this.server.password || '';
 
+    // Se o login for email, utiliza getTokenEmail prioritariamente
+    if (login.includes('@')) {
+      try {
+        const emailBody = `<tok:getTokenEmail>
+          <companyId>${this.server.companyId}</companyId>
+          <email>${this.escapeXml(login)}</email>
+          <password>${this.escapeXml(password)}</password>
+        </tok:getTokenEmail>`;
+        const emailRes = await this.callSoap('/webdesk/TokenService', 'getTokenEmail', emailBody);
+        const match = emailRes.match(/<result>(.*?)<\/result>/s);
+        if (match && match[1].trim() && !match[1].includes('UT010031')) {
+          return match[1].trim();
+        }
+      } catch {
+        // Fallback para getToken padrão
+      }
+    }
+
     const body = `<tok:getToken>
       <login>${this.escapeXml(login)}</login>
       <password>${this.escapeXml(password)}</password>
@@ -68,7 +86,7 @@ export class WorkflowSoapService {
 
     const token = match[1].trim();
     if (token.includes('UT010031') || token.includes('invalido')) {
-      throw new Error('Credenciais de acesso ao Fluig inválidas.');
+      throw new Error('Credenciais de acesso ao Fluig inválidas (UT010031: Login failed).');
     }
     return token;
   }

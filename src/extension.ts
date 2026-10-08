@@ -14,6 +14,7 @@ export function activate(context: vscode.ExtensionContext) {
   outputChannel.appendLine('Extensão Fluig Workflow ativada.');
 
   // Inicializa Serviços
+  DiagramViewerService.initialize(context);
   const serverService = new ServerService(context);
   const exportService = new ProcessExportService(serverService);
   const importService = new ProcessImportService(serverService);

@@ -14,6 +14,7 @@ As extensões existentes no ecossistema Fluig para VS Code possuem limitações 
 
 | Recurso | `andretimm/vscode-fluig` | `fluiggers/fluig-vscode-extension` | **`vscode-fluig-workflow`** |
 | :--- | :---: | :---: | :---: |
+| **Modelador Visual BPMN 2.0 (Drag & Drop)** | ❌ Não suportado | ❌ Apenas visualização SVG | ✅ **Sim (Edição visual interativa)** |
 | **Exportar Processos (`.process`)** | ❌ Não suportado | ⚠️ Requer Eclipse Luna + Java antigo | ✅ **Sim (100% autônomo)** |
 | **Importar Processos do Servidor** | ❌ Não suportado | ❌ Não suportado | ✅ **Sim (SOAP + REST v2)** |
 | **Download de Eventos de Processo** | ❌ Não suportado | ❌ Não suportado | ✅ **Sim (`workflow/scripts`)** |
@@ -24,29 +25,36 @@ As extensões existentes no ecossistema Fluig para VS Code possuem limitações 
 
 ## ✨ Funcionalidades
 
-1. **Exportação de Processos (`.process`)**
+1. **Modelador BPMN 2.0 Visual e Interativo (Sem Eclipse)**
+   - Edite diagramas BPMN diretamente no VS Code com paleta drag-and-drop, context pads, anotações e conexões.
+   - **Edição de Propriedades do Processo:** Edite a Descrição do Processo e o ID do Formulário GED/ECM (`formId`) vinculado.
+   - **Gerador de Scripts de Atividades:** Clique em qualquer atividade de serviço para gerar ou abrir o respectivo script JS (`<processId>.servicetask<Seq>.js`) com template Fluig pronto.
+   - **Salvamento Sincronizado (`Ctrl + S`):** Atualiza simultaneamente o `.process`, o `.svg` e o `.ecm30.xml`.
+   - **Exportação com 1 Clique:** Botão direto dentro do modelador para enviar a nova versão ao servidor Fluig.
+
+2. **Exportação de Processos (`.process`)**
    - Converte os diagramas BPMN `.process` para os formatos nativos exigidos pelo Fluig (`.ecm30.xml` e `.svg`).
    - Autentica via token no `TokenService` do Fluig.
    - Envia o pacote completo via SOAP `WorkflowEngineService:importProcess`.
    - Pergunta se deseja **Liberar a nova versão** imediatamente ou mantê-la como rascunho.
    - Incrementa automaticamente a versão do processo.
 
-2. **Importação de Processos do Servidor**
+3. **Importação de Processos do Servidor**
    - Lista todos os processos ativos no servidor Fluig configurado.
    - Cria o diagrama `.process` no padrão BPMN 2.0 em `workflow/diagrams/<processId>.process`.
    - Gera automaticamente os arquivos auxiliares de compatibilidade (`<processId>.ecm30.xml` e `<processId>.svg`).
    - Conecta à API REST v2 (`/process-management/api/v2/processes/...`) e baixa todos os scripts de eventos cadastrados no servidor para `workflow/scripts/<processId>.<evento>.js`. Se o processo não contiver scripts customizados, cria automaticamente templates para os principais eventos (`beforeTaskSave`, `afterTaskSave`, etc.).
 
-3. **Gerenciador de Servidores Fluig**
+4. **Gerenciador de Servidores Fluig**
    - Cadastro intuitivo de múltiplos ambientes (Desenvolvimento, Homologação, Produção).
    - Alternância rápida do servidor ativo diretamente pela barra lateral do VS Code.
 
-4. **Painel Lateral Dedicado (Activity Bar)**
+5. **Painel Lateral Dedicado (Activity Bar)**
    - Painel com o ícone oficial do Fluig na barra lateral.
    - **Servidores Fluig**: Visualização e gerenciamento de conexões.
    - **Processos do Servidor**: Listagem dos fluxos disponíveis no servidor ativo com botão de importação direta com 1 clique.
 
-5. **Compilação Contínua (On-Save)**
+6. **Compilação Contínua (On-Save)**
    - Ao salvar um arquivo `.process`, os artefatos `<processId>.ecm30.xml` e `<processId>.svg` são sincronizados automaticamente no projeto.
 
 ---

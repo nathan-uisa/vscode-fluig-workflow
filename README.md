@@ -14,7 +14,9 @@ As extensoes existentes no ecossistema Fluig para VS Code possuem limitacoes cri
 
 | Recurso | `andretimm/vscode-fluig` | `fluiggers/fluig-vscode-extension` | **`vscode-fluig-workflow`** |
 | :--- | :---: | :---: | :---: |
-| **Modelador Visual BPMN 2.0 (Drag & Drop)** | Nao suportado | Apenas visualizacao SVG | **Sim (Edicao visual interativa)** |
+| **Modelador Visual BPMN 2.0 (Drag & Drop)** | Nao suportado | Apenas visualizacao SVG | **Sim (Edicao visual interativa com grade)** |
+| **Mecanismos de Atribuicao & SLA Visual** | Nao suportado | Nao suportado | **Sim (Pool, Papel, Grupo, Campo, etc.)** |
+| **IntelliSense Global em Scripts Fluig** | Parcial | Parcial | **Sim (`fluig.d.ts`, hAPI, Datasets)** |
 | **Exportar Processos (`.process`)** | Nao suportado | Requer Eclipse Luna + Java legado | **Sim (100% autonomo)** |
 | **Importar Processos do Servidor** | Nao suportado | Nao suportado | **Sim (SOAP + REST v2)** |
 | **Download de Eventos de Processo** | Nao suportado | Nao suportado | **Sim (`workflow/scripts`)** |
@@ -27,13 +29,23 @@ As extensoes existentes no ecossistema Fluig para VS Code possuem limitacoes cri
 
 1. **Modelador BPMN 2.0 Visual e Interativo (Sem Eclipse)**
    - Edite diagramas BPMN diretamente no VS Code com paleta drag-and-drop, context pads, anotacoes e conexoes.
+   - **Grade Visual com Alinhamento:** Grade milimetrada de fundo com alternancia rapida e sincronizacao de escala.
+   - **Mecanismos de Atribuicao Fluig:** Configure diretamente na atividade mecanismos como *Campo Formulario*, *Pool de Papel*, *Pool de Grupo*, *Papel*, *Grupo*, *Usuario*, *Executor da Atividade* ou *Mecanismo Customizado*, com persistencia automatica no `.ecm30.xml`.
+   - **Prazo de Conclusao (SLA):** Definicao de prazos em horas com calculo e conversao automatica em segundos.
    - **Paleta de Cores Oficial Fluig:** Cores oficiais para Inicio (verde), Fim (vermelho), Tarefas (azul), Gateways (laranja) e Intermediarios (amarelo), com seletor de cores customizado e persistencia BPMN-in-Color.
    - **Edicao de Propriedades do Processo:** Edite a Descricao do Processo e o ID do Formulario GED/ECM (`formId`) vinculado.
    - **Gerador de Scripts de Atividades:** Clique em qualquer atividade de servico para gerar ou abrir o respectivo script JS (`<processId>.servicetask<Seq>.js`) com template Fluig pronto.
    - **Salvamento Sincronizado (`Ctrl + S`):** Atualiza simultaneamente o `.process`, o `.svg` e o `.ecm30.xml`.
    - **Exportacao Direta:** Envio de novas versoes ao servidor Fluig diretamente pelo editor.
 
-2. **Exportacao de Processos (`.process`)**
+2. **IntelliSense e Tipagens Fluig para Scripts (`workflow/scripts`)**
+   - Fornecimento automatico de definicoes globais em TypeScript (`fluig.d.ts`) e `jsconfig.json`.
+   - Autocompletar e JSDoc para `hAPI` (`getCardValue`, `setCardValue`, `startProcess`, `getChildrenIndexes`, etc.).
+   - Tipagem com sobrecarga literal para `getValue("WKDef")`, `getValue("WKNumState")`, `getValue("WKUser")`, etc.
+   - Autocompletar para `DatasetFactory` (`getDataset`, `createConstraint`), `ConstraintType`, `log` e `notifier`.
+   - Suporte a classes Java de utilidade como `java.util.HashMap`, `java.util.ArrayList`, etc.
+
+3. **Exportacao de Processos (`.process`)**
    - Converte os diagramas BPMN `.process` para os formatos nativos exigidos pelo Fluig (`.ecm30.xml` e `.svg`).
    - Autentica via token no `TokenService` do Fluig.
    - Envia o pacote completo via SOAP `WorkflowEngineService:importProcess`.
@@ -86,7 +98,7 @@ meu-projeto-fluig/
 
 1. Acesse a pagina de Releases do repositorio:
    [GitHub Releases - vscode-fluig-workflow](https://github.com/nathan-uisa/vscode-fluig-workflow/releases/latest)
-2. Faca o download do arquivo `vscode-fluig-workflow-0.1.6.vsix`.
+2. Faca o download do arquivo `vscode-fluig-workflow-0.1.7.vsix`.
 3. No VS Code:
    - Abra a aba de **Extensoes** (`Ctrl + Shift + X`).
    - Clique no menu de tres pontinhos (`...`) no canto superior do painel de extensoes.
@@ -94,7 +106,7 @@ meu-projeto-fluig/
 
 **Ou instale via terminal em 1 comando:**
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/nathan-uisa/vscode-fluig-workflow/releases/download/v0.1.6/vscode-fluig-workflow-0.1.6.vsix" -OutFile "vscode-fluig-workflow.vsix"; code --install-extension vscode-fluig-workflow.vsix
+Invoke-WebRequest -Uri "https://github.com/nathan-uisa/vscode-fluig-workflow/releases/download/v0.1.7/vscode-fluig-workflow-0.1.7.vsix" -OutFile "vscode-fluig-workflow.vsix"; code --install-extension vscode-fluig-workflow.vsix
 ```
 
 ### Opcao 2: A partir do Codigo Fonte
@@ -105,7 +117,7 @@ cd vscode-fluig-workflow
 npm install
 npm run compile
 npx @vscode/vsce package --no-dependencies
-code --install-extension vscode-fluig-workflow-0.1.6.vsix
+code --install-extension vscode-fluig-workflow-0.1.7.vsix
 ```
 
 ### Definir como Editor Padrao para `.process`
@@ -182,7 +194,7 @@ npx @vscode/vsce package
 
 E para instalar no VS Code:
 ```bash
-code --install-extension vscode-fluig-workflow-0.1.6.vsix
+code --install-extension vscode-fluig-workflow-0.1.7.vsix
 ```
 
 ---

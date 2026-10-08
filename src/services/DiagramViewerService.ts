@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { Ecm30GeneratorService } from './Ecm30GeneratorService';
 import { WorkflowRestService } from './WorkflowRestService';
+import { FluigTypingsService } from './FluigTypingsService';
 
 export class DiagramViewerService {
   private static extensionUri: vscode.Uri;
@@ -86,6 +87,9 @@ export class DiagramViewerService {
       fs.mkdirSync(scriptsDir, { recursive: true });
     }
 
+    // Garante que as tipagens e autocomplete estejam presentes na pasta de scripts
+    FluigTypingsService.ensureTypings(scriptsDir).catch(() => {});
+
     const svgPath = path.join(diagramsDir, `${processId}.svg`);
     const processPath = path.join(diagramsDir, `${processId}.process`);
     const ecm30Path = path.join(diagramsDir, `${processId}.ecm30.xml`);
@@ -121,7 +125,7 @@ export class DiagramViewerService {
       switch (message.command) {
         case 'saveProcess': {
           try {
-            const { xml, svg, processDescription, formId } = message;
+            const { xml, svg, processDescription, formId, activityConfigs } = message;
 
             // 1. Salva o .process com formatação XMI compatível com Fluig TDS
             const wrappedProcessXml = this.wrapProcessXml(xml);
@@ -159,6 +163,16 @@ export class DiagramViewerService {
               if (formId !== undefined && formId !== '') {
                 ecmXml = ecmXml.replace(/<formId>[\s\S]*?<\/formId>/, `<formId>${formId}</formId>`);
               }
+
+              // Atualiza configurações de atividades (Mecanismo de Atribuição e Prazo SLA)
+              if (activityConfigs && Array.isArray(activityConfigs)) {
+                for (const cfg of activityConfigs) {
+                  if (cfg && cfg.sequence) {
+                    ecmXml = this.updateProcessStateInEcmXml(ecmXml, processId, '1', cfg);
+                  }
+                }
+              }
+
               fs.writeFileSync(ecm30Path, ecmXml, 'utf-8');
             } else {
               Ecm30GeneratorService.ensureArtifacts(processPath, true);
@@ -308,7 +322,16 @@ function servicetask(attempt, message) {
     let processDesc = processId;
     let version = '1';
     let formId = '';
-    const activities: Array<{ sequence: string; name: string; type: string; scriptFile?: string }> = [];
+    const activities: Array<{
+      sequence: string;
+      name: string;
+      type: string;
+      scriptFile?: string;
+      allocationId?: string;
+      allocationValue?: string;
+      deadlineSeconds?: number;
+      deadlineHours?: number;
+    }> = [];
 
     if (fs.existsSync(ecm30Path)) {
       try {
@@ -338,8 +361,9 @@ function servicetask(attempt, message) {
           else if (bpmnType === 82) {
             typeName = 'Tarefa de Serviço';
             expectedScript = `${processId}.servicetask${seq}.js`;
-          } else if (bpmnType === 20) typeName = 'Tarefa de Usuário';
-          else if (bpmnType === 43) {
+          } else if (bpmnType === 20 || bpmnType === 80) {
+            typeName = 'Tarefa de Usuário';
+          } else if (bpmnType === 43) {
             typeName = 'Evento Intermediário';
             expectedScript = `${processId}.intermediateevent${seq}.js`;
           }
@@ -349,7 +373,21 @@ function servicetask(attempt, message) {
             scriptFile = expectedScript;
           }
 
-          activities.push({ sequence: seq, name, type: typeName, scriptFile });
+          const rawAllocId = s.match(/<engineAllocationId>(.*?)<\/engineAllocationId>/)?.[1]?.trim() || '';
+          const rawAllocConfig = s.match(/<engineAllocationConfiguration>(.*?)<\/engineAllocationConfiguration>/)?.[1] || '';
+          const rawDeadline = parseInt(s.match(/<deadlineTime>(\d+)<\/deadlineTime>/)?.[1] || '0', 10);
+          const { value: allocVal } = this.parseAllocationConfig(rawAllocId, rawAllocConfig);
+
+          activities.push({
+            sequence: seq,
+            name,
+            type: typeName,
+            scriptFile,
+            allocationId: rawAllocId,
+            allocationValue: allocVal,
+            deadlineSeconds: rawDeadline,
+            deadlineHours: Math.round((rawDeadline / 3600) * 10) / 10
+          });
         }
       } catch (err) {
         console.warn('Erro ao ler metadados do ECM30:', err);
@@ -650,6 +688,177 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
       .replace(/'/g, '&apos;');
   }
 
+  public static parseAllocationConfig(id: string, configXml: string): { type: string; value: string } {
+    if (!id || !id.trim()) {
+      return { type: '', value: '' };
+    }
+    const unescaped = configXml
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"');
+
+    let value = '';
+    const formMatch = unescaped.match(/<FormField>(.*?)<\/FormField>/i);
+    if (formMatch) value = formMatch[1];
+
+    const roleMatch = unescaped.match(/<Role>(.*?)<\/Role>/i);
+    if (roleMatch) value = roleMatch[1];
+
+    const grpMatch = unescaped.match(/<Group>(.*?)<\/Group>/i);
+    if (grpMatch) value = grpMatch[1];
+
+    const usrMatch = unescaped.match(/<User>(.*?)<\/User>/i);
+    if (usrMatch) value = usrMatch[1];
+
+    const baseMatch = unescaped.match(/<BaseActivity>(.*?)<\/BaseActivity>/i);
+    if (baseMatch) value = baseMatch[1];
+
+    const custMatch = unescaped.match(/<CustomMechanism>(.*?)<\/CustomMechanism>/i);
+    if (custMatch) value = custMatch[1];
+
+    if (!value && unescaped) {
+      const tagMatch = unescaped.replace(/<\/?AssignmentController>/gi, '').match(/<[^>]+>(.*?)<\/[^>]+>/);
+      value = tagMatch ? tagMatch[1] : unescaped.replace(/<[^>]+>/g, '').trim();
+    }
+
+    return { type: id.trim(), value: value.trim() };
+  }
+
+  public static buildAllocationConfig(type: string, value: string): string {
+    if (!type || !type.trim() || !value || !value.trim()) {
+      return '';
+    }
+    const val = value.trim();
+    switch (type) {
+      case 'Campo Formulário':
+        return `<AssignmentController><FormField>${val}</FormField></AssignmentController>`;
+      case 'Pool Papel':
+      case 'Papel':
+        return `<AssignmentController><Role>${val}</Role></AssignmentController>`;
+      case 'Pool Grupo':
+      case 'Grupo':
+        return `<AssignmentController><Group>${val}</Group></AssignmentController>`;
+      case 'Usuário':
+        return `<AssignmentController><User>${val}</User></AssignmentController>`;
+      case 'Executor da Atividade':
+        return `<AssignmentController><BaseActivity>${val}</BaseActivity></AssignmentController>`;
+      case 'Mecanismo Customizado':
+      default:
+        return `<AssignmentController><CustomMechanism>${val}</CustomMechanism></AssignmentController>`;
+    }
+  }
+
+  public static updateProcessStateInEcmXml(
+    ecmXml: string,
+    processId: string,
+    version: string,
+    cfg: {
+      sequence: string;
+      name?: string;
+      allocationId?: string;
+      allocationValue?: string;
+      deadlineSeconds?: number;
+    }
+  ): string {
+    const seq = cfg.sequence;
+    if (!seq) return ecmXml;
+
+    const regex = new RegExp('(<ProcessState>(?:(?!<\\/ProcessState>)[\\s\\S])*?<sequence>' + seq + '<\\/sequence>(?:(?!<\\/ProcessState>)[\\s\\S])*?<\\/ProcessState>)');
+    const match = ecmXml.match(regex);
+
+    const allocId = cfg.allocationId || '';
+    const allocConfig = allocId && cfg.allocationValue ? this.buildAllocationConfig(allocId, cfg.allocationValue) : '';
+    const escapedConfig = allocConfig ? this.escapeXml(allocConfig) : '';
+    const deadlineSeconds = cfg.deadlineSeconds !== undefined ? cfg.deadlineSeconds : 0;
+
+    if (match) {
+      let block = match[1];
+
+      if (cfg.name) {
+        block = block.replace(/<stateName>.*?<\/stateName>/, `<stateName>${this.escapeXml(cfg.name)}</stateName>`);
+        block = block.replace(/<stateDescription>.*?<\/stateDescription>/, `<stateDescription>${this.escapeXml(cfg.name)}</stateDescription>`);
+      }
+
+      if (block.includes('<deadlineTime>')) {
+        block = block.replace(/<deadlineTime>.*?<\/deadlineTime>/, `<deadlineTime>${deadlineSeconds}</deadlineTime>`);
+      } else {
+        block = block.replace('</ProcessState>', `  <deadlineTime>${deadlineSeconds}</deadlineTime>\n    </ProcessState>`);
+      }
+
+      if (block.includes('<engineAllocationId>')) {
+        block = block.replace(/<engineAllocationId>.*?<\/engineAllocationId>/, `<engineAllocationId>${this.escapeXml(allocId)}</engineAllocationId>`);
+      } else {
+        block = block.replace('</ProcessState>', `  <engineAllocationId>${this.escapeXml(allocId)}</engineAllocationId>\n    </ProcessState>`);
+      }
+
+      if (block.includes('<engineAllocationConfiguration>')) {
+        block = block.replace(/<engineAllocationConfiguration>.*?<\/engineAllocationConfiguration>/, `<engineAllocationConfiguration>${escapedConfig}</engineAllocationConfiguration>`);
+      } else {
+        block = block.replace('</ProcessState>', `  <engineAllocationConfiguration>${escapedConfig}</engineAllocationConfiguration>\n    </ProcessState>`);
+      }
+
+      return ecmXml.replace(match[1], block);
+    } else {
+      const newBlock = `
+    <ProcessState>
+      <processStatePK>
+        <companyId>1</companyId>
+        <processId>${this.escapeXml(processId)}</processId>
+        <version>${version || '1'}</version>
+        <sequence>${seq}</sequence>
+      </processStatePK>
+      <stateName>${this.escapeXml(cfg.name || `Atividade ${seq}`)}</stateName>
+      <stateDescription>${this.escapeXml(cfg.name || `Atividade ${seq}`)}</stateDescription>
+      <instruction></instruction>
+      <deadlineTime>${deadlineSeconds}</deadlineTime>
+      <joint>false</joint>
+      <agreementPercentage>0</agreementPercentage>
+      <engineAllocationId>${this.escapeXml(allocId)}</engineAllocationId>
+      <engineAllocationConfiguration>${escapedConfig}</engineAllocationConfiguration>
+      <selectColleague>1</selectColleague>
+      <initialState>false</initialState>
+      <notifyAuthorityDelay>true</notifyAuthorityDelay>
+      <notifyRequisitionerDelay>false</notifyRequisitionerDelay>
+      <allowanceAuthorityTime>3600</allowanceAuthorityTime>
+      <frequenceAuthorityTime>3600</frequenceAuthorityTime>
+      <allowanceRequisitionerTime>0</allowanceRequisitionerTime>
+      <frequenceRequisitionerTime>0</frequenceRequisitionerTime>
+      <transferAttachments>false</transferAttachments>
+      <subProcessId></subProcessId>
+      <formFolder>0</formFolder>
+      <notifyAuthorityFollowUp>true</notifyAuthorityFollowUp>
+      <notifyRequisitionerFollowUp>false</notifyRequisitionerFollowUp>
+      <automatic>false</automatic>
+      <positionX>0</positionX>
+      <positionY>0</positionY>
+      <forecastedEffortType>0</forecastedEffortType>
+      <forecastedEffort>0</forecastedEffort>
+      <notifyManagerFollowUp>false</notifyManagerFollowUp>
+      <notifyManagerDelay>false</notifyManagerDelay>
+      <allowanceManagerTime>0</allowanceManagerTime>
+      <frequenceManagerTime>0</frequenceManagerTime>
+      <inhibitTransfer>false</inhibitTransfer>
+      <periodId></periodId>
+      <stateType>0</stateType>
+      <bpmnType>80</bpmnType>
+      <counterSign>false</counterSign>
+      <digitalSignature>false</digitalSignature>
+      <executionType>0</executionType>
+      <deadlineFieldName></deadlineFieldName>
+      <openInstances>0</openInstances>
+      <destinationStates/>
+    </ProcessState>`;
+
+      if (ecmXml.includes('</list>')) {
+        return ecmXml.replace('</list>', `${newBlock}\n</list>`);
+      } else if (ecmXml.includes('</ProcessDefinition>')) {
+        return ecmXml.replace('</ProcessDefinition>', `${newBlock}\n</ProcessDefinition>`);
+      }
+      return ecmXml + newBlock;
+    }
+  }
+
   private static createInitialBpmn2Xml(processId: string, processName: string): string {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0" id="Definitions_1" targetNamespace="http://www.fluig.com/bpm">
@@ -705,7 +914,16 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
       formId: string;
       bpmnXml: string;
       serverSvg: string;
-      activities: Array<{ sequence: string; name: string; type: string; scriptFile?: string }>;
+      activities: Array<{
+        sequence: string;
+        name: string;
+        type: string;
+        scriptFile?: string;
+        allocationId?: string;
+        allocationValue?: string;
+        deadlineSeconds?: number;
+        deadlineHours?: number;
+      }>;
       existingScripts: Array<{ name: string; fullPath: string; size: number }>;
       processPath?: string;
       ecm30Path?: string;
@@ -998,7 +1216,7 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
       margin-bottom: 4px;
     }
 
-    .form-group input, .form-group textarea {
+    .form-group input, .form-group textarea, .form-group select {
       width: 100%;
       background: var(--input-bg);
       color: var(--input-fg);
@@ -1010,7 +1228,7 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
       outline: none;
     }
 
-    .form-group input:focus, .form-group textarea:focus {
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
       border-color: var(--btn-bg);
     }
 
@@ -1249,6 +1467,8 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
     </div>
   </div>
 
+  <script id="activitiesData" type="application/json">${JSON.stringify(data.activities || []).replace(/<\/script/gi, '<\\/script')}</script>
+
   <!-- BPMN Modeler Script -->
   <script src="${data.resourcesUri}/bpmn-modeler.production.min.js"></script>
 
@@ -1258,6 +1478,114 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
     const rawBase64 = "${safeBpmnXml}";
     const bytes = Uint8Array.from(atob(rawBase64), c => c.charCodeAt(0));
     const initialBpmnXml = new TextDecoder('utf-8').decode(bytes);
+
+    const activitiesDataEl = document.getElementById('activitiesData');
+    const initialActivities = activitiesDataEl ? JSON.parse(activitiesDataEl.textContent || '[]') : [];
+
+    const activitiesMap = {};
+    const elementSequenceMap = {};
+
+    initialActivities.forEach(act => {
+      activitiesMap[act.sequence] = {
+        sequence: act.sequence,
+        name: act.name,
+        allocationId: act.allocationId || '',
+        allocationValue: act.allocationValue || '',
+        deadlineSeconds: act.deadlineSeconds !== undefined ? act.deadlineSeconds : 0,
+        deadlineHours: act.deadlineHours !== undefined ? act.deadlineHours : 0
+      };
+    });
+
+    function getActivityForElement(element) {
+      if (!element) return null;
+      const bo = element.businessObject || {};
+
+      let seq = elementSequenceMap[element.id];
+
+      if (!seq) {
+        const numMatch = element.id.match(/\\d+/);
+        if (numMatch && activitiesMap[numMatch[0]]) {
+          seq = numMatch[0];
+        }
+      }
+
+      if (!seq && bo.name) {
+        const actByName = Object.values(activitiesMap).find(a => a.name === bo.name);
+        if (actByName) {
+          seq = actByName.sequence;
+        }
+      }
+
+      if (!seq) {
+        const numMatch = element.id.match(/\\d+/);
+        if (numMatch) {
+          seq = numMatch[0];
+        }
+      }
+
+      if (!seq) {
+        const allSeqs = Object.values(activitiesMap).map(a => parseInt(a.sequence, 10)).filter(n => !isNaN(n));
+        const maxSeq = allSeqs.length > 0 ? Math.max(...allSeqs) : 4;
+        seq = String(maxSeq + 1);
+      }
+
+      elementSequenceMap[element.id] = seq;
+
+      if (!activitiesMap[seq]) {
+        activitiesMap[seq] = {
+          sequence: seq,
+          name: bo.name || ('Atividade ' + seq),
+          allocationId: '',
+          allocationValue: '',
+          deadlineSeconds: 0,
+          deadlineHours: 0
+        };
+      }
+
+      if (bo.name && bo.name !== activitiesMap[seq].name) {
+        activitiesMap[seq].name = bo.name;
+      }
+
+      return activitiesMap[seq];
+    }
+
+    function formatDeadlineText(seconds) {
+      if (!seconds || seconds <= 0) return 'Sem prazo definido (0 segundos)';
+      const hours = seconds / 3600;
+      if (hours >= 24 && hours % 24 === 0) {
+        const days = hours / 24;
+        return seconds.toLocaleString() + ' segundos (' + days + ' dia' + (days > 1 ? 's' : '') + ')';
+      }
+      return seconds.toLocaleString() + ' segundos (' + hours + 'h)';
+    }
+
+    function onAllocTypeChange(type) {
+      if (!selectedElement) return;
+      const cfg = getActivityForElement(selectedElement);
+      if (!cfg) return;
+      cfg.allocationId = type;
+      renderSelectedElement(selectedElement);
+    }
+
+    function onAllocValChange(val) {
+      if (!selectedElement) return;
+      const cfg = getActivityForElement(selectedElement);
+      if (!cfg) return;
+      cfg.allocationValue = val.trim();
+    }
+
+    function onDeadlineHoursChange(val) {
+      if (!selectedElement) return;
+      const cfg = getActivityForElement(selectedElement);
+      if (!cfg) return;
+      const hours = parseFloat(val) || 0;
+      cfg.deadlineHours = hours;
+      cfg.deadlineSeconds = Math.round(hours * 3600);
+      const hintEl = document.getElementById('deadlineHint');
+      if (hintEl) {
+        hintEl.innerText = formatDeadlineText(cfg.deadlineSeconds);
+      }
+    }
 
     let modeler = null;
     let currentMode = 'modeler'; // 'modeler' ou 'svg'
@@ -1409,21 +1737,102 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
         \`;
       }
 
-      container.innerHTML = \`
-        <div class="selected-card">
-          <div class="selected-card-title">
-            <span>\${name}</span>
-            <span class="selected-type">\${type.replace('bpmn:', '')}</span>
-          </div>
-          <div class="selected-id">ID: \${element.id}</div>
-          <div class="form-group" style="margin-bottom:6px;">
-            <label>Nome / Rótulo</label>
-            <input type="text" value="\${name}" oninput="updateElementName(this.value)">
-          </div>
-          \${colorControlsHtml}
-          \${serviceBtnHtml}
-        </div>
-      \`;
+      const isTask = type.includes('Task') || type.includes('Activity') || type === 'bpmn:Task' || type === 'bpmn:UserTask' || type === 'bpmn:ServiceTask' || type === 'bpmn:ReceiveTask' || type === 'bpmn:ManualTask' || type === 'bpmn:BusinessRuleTask';
+      const actCfg = isTask ? getActivityForElement(element) : null;
+
+      let fluigConfigHtml = '';
+      if (isTask && actCfg) {
+        const standardMechanisms = [
+          { id: '', label: 'Nenhum / Não Configurado' },
+          { id: 'Campo Formulário', label: 'Campo Formulário' },
+          { id: 'Pool Papel', label: 'Pool de Papel' },
+          { id: 'Pool Grupo', label: 'Pool de Grupo' },
+          { id: 'Papel', label: 'Papel' },
+          { id: 'Grupo', label: 'Grupo' },
+          { id: 'Usuário', label: 'Usuário' },
+          { id: 'Executor Atividade', label: 'Executor da Atividade' },
+          { id: 'Mecanismo Customizado', label: 'Mecanismo Customizado' }
+        ];
+
+        let currentAllocId = actCfg.allocationId || '';
+        if (currentAllocId === 'Executor da Atividade') currentAllocId = 'Executor Atividade';
+
+        let selectOptionsHtml = standardMechanisms.map(function(m) {
+          var sel = (m.id === currentAllocId) ? ' selected' : '';
+          return '<option value="' + m.id + '"' + sel + '>' + m.label + '</option>';
+        }).join('');
+
+        if (currentAllocId && !standardMechanisms.some(function(m) { return m.id === currentAllocId; })) {
+          selectOptionsHtml += '<option value="' + currentAllocId + '" selected>' + currentAllocId + ' (Personalizado)</option>';
+        }
+
+        var allocInputHtml = '';
+        if (currentAllocId) {
+          var fieldLabel = 'Valor do Mecanismo';
+          var placeholder = 'Informe o valor';
+          if (currentAllocId === 'Campo Formulário') {
+            fieldLabel = 'Nome do Campo do Formulário';
+            placeholder = 'Ex: solicitante, gestor_aprovador';
+          } else if (currentAllocId === 'Pool Papel' || currentAllocId === 'Papel') {
+            fieldLabel = 'Código do Papel';
+            placeholder = 'Ex: ANALISE_IBID, DIRETORIA';
+          } else if (currentAllocId === 'Pool Grupo' || currentAllocId === 'Grupo') {
+            fieldLabel = 'Código do Grupo';
+            placeholder = 'Ex: CUSTOS_CC_CONTROLADORIA, TI';
+          } else if (currentAllocId === 'Usuário') {
+            fieldLabel = 'Matrícula do Usuário';
+            placeholder = 'Ex: adm, 8004717';
+          } else if (currentAllocId === 'Executor Atividade' || currentAllocId === 'Executor da Atividade') {
+            fieldLabel = 'Sequência da Atividade Base';
+            placeholder = 'Ex: 4 (Início)';
+          } else {
+            fieldLabel = 'Configuração do Mecanismo';
+            placeholder = 'Identificador ou parâmetro';
+          }
+
+          allocInputHtml = '<div class="form-group" style="margin-top: 8px;">' +
+            '<label style="font-size:11px;">' + fieldLabel + '</label>' +
+            '<input type="text" value="' + (actCfg.allocationValue || '').replace(/"/g, '&quot;') + '" placeholder="' + placeholder + '" oninput="onAllocValChange(this.value)">' +
+            '</div>';
+        }
+
+        fluigConfigHtml = '<div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border);">' +
+          '<div style="font-weight:600; font-size:12px; margin-bottom:8px; color:var(--highlight);">Configurações Fluig</div>' +
+          '<div class="form-group" style="margin-bottom:8px;">' +
+            '<label>Mecanismo de Atribuição</label>' +
+            '<select onchange="onAllocTypeChange(this.value)">' +
+              selectOptionsHtml +
+            '</select>' +
+            allocInputHtml +
+          '</div>' +
+          '<div class="form-group" style="margin-top: 10px;">' +
+            '<label>Prazo de Conclusão (SLA / Horas)</label>' +
+            '<div style="display:flex; align-items:center; gap:8px;">' +
+              '<input type="number" value="' + (actCfg.deadlineHours || 0) + '" min="0" step="0.5" oninput="onDeadlineHoursChange(this.value)" style="width:100px;">' +
+              '<span style="font-size:12px; color:var(--fg);">horas</span>' +
+            '</div>' +
+            '<div id="deadlineHint" style="font-size:11px; color:#888; margin-top:4px;">' +
+              formatDeadlineText(actCfg.deadlineSeconds) +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      var seqText = actCfg ? ' &bull; Sequência: ' + actCfg.sequence : '';
+      container.innerHTML = '<div class="selected-card">' +
+        '<div class="selected-card-title">' +
+          '<span>' + (name || '').replace(/</g, '&lt;') + '</span>' +
+          '<span class="selected-type">' + type.replace('bpmn:', '') + '</span>' +
+        '</div>' +
+        '<div class="selected-id">ID: ' + element.id + seqText + '</div>' +
+        '<div class="form-group" style="margin-bottom:6px;">' +
+          '<label>Nome / Rótulo</label>' +
+          '<input type="text" value="' + (name || '').replace(/"/g, '&quot;') + '" oninput="updateElementName(this.value)">' +
+        '</div>' +
+        fluigConfigHtml +
+        colorControlsHtml +
+        serviceBtnHtml +
+      '</div>';
     }
 
     function getFluigColorsForType(type) {
@@ -1589,6 +1998,10 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
       try {
         const modeling = modeler.get('modeling');
         modeling.updateLabel(selectedElement, newName);
+        const cfg = getActivityForElement(selectedElement);
+        if (cfg) {
+          cfg.name = newName;
+        }
       } catch (e) {
         console.warn('Erro ao atualizar nome do elemento:', e);
       }
@@ -1631,7 +2044,8 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
           xml,
           svg,
           processDescription: desc,
-          formId
+          formId,
+          activityConfigs: Object.values(activitiesMap)
         });
       } catch (err) {
         console.error('Erro ao salvar:', err);

@@ -6,6 +6,7 @@ import { ProcessExportService } from './services/ProcessExportService';
 import { ProcessImportService } from './services/ProcessImportService';
 import { Ecm30GeneratorService } from './services/Ecm30GeneratorService';
 import { DiagramViewerService } from './services/DiagramViewerService';
+import { FluigTypingsService } from './services/FluigTypingsService';
 import { ServerTreeProvider, ServerTreeItem } from './views/ServerTreeProvider';
 import { ProcessTreeProvider, ProcessTreeItem } from './views/ProcessTreeProvider';
 import { ProcessCustomEditorProvider } from './providers/ProcessCustomEditorProvider';
@@ -16,6 +17,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Inicializa Serviços
   DiagramViewerService.initialize(context);
+  FluigTypingsService.initialize(context);
+  FluigTypingsService.ensureTypings().catch(() => {});
   const serverService = new ServerService(context);
   const exportService = new ProcessExportService(serverService);
   const importService = new ProcessImportService(serverService);
@@ -184,6 +187,11 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  // 8. Configurar IntelliSense e Tipagens Fluig
+  const setupIntelliSenseCmd = vscode.commands.registerCommand('fluigWorkflow.setupIntelliSense', async () => {
+    await FluigTypingsService.ensureTypings(undefined, true);
+  });
+
   // Auto-geração de artefatos ao salvar arquivo .process
   const onSaveListener = vscode.workspace.onDidSaveTextDocument(document => {
     if (document.fileName.endsWith('.process')) {
@@ -212,6 +220,7 @@ export function activate(context: vscode.ExtensionContext) {
     exportProcessCmd,
     generateEcm30Cmd,
     viewDiagramCmd,
+    setupIntelliSenseCmd,
     onSaveListener
   );
 }

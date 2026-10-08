@@ -2,7 +2,7 @@
   "name": "vscode-fluig-workflow",
   "displayName": "Fluig Workflow Manager",
   "description": "Extensão VS Code para sincronização, importação e exportação de processos TOTVS Fluig",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "nathan-uisa",
   "repository": {
     "type": "git",
@@ -25,6 +25,7 @@
     "process"
   ],
   "activationEvents": [
+    "onCustomEditor:fluigWorkflow.diagramEditor",
     "onCommand:fluigWorkflow.exportProcess",
     "onCommand:fluigWorkflow.importProcess",
     "onCommand:fluigWorkflow.listProcesses",
@@ -36,6 +37,18 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "customEditors": [
+      {
+        "viewType": "fluigWorkflow.diagramEditor",
+        "displayName": "Fluig BPMN Modeler",
+        "selector": [
+          {
+            "filenamePattern": "*.process"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {

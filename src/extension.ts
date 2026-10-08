@@ -8,6 +8,7 @@ import { Ecm30GeneratorService } from './services/Ecm30GeneratorService';
 import { DiagramViewerService } from './services/DiagramViewerService';
 import { ServerTreeProvider, ServerTreeItem } from './views/ServerTreeProvider';
 import { ProcessTreeProvider, ProcessTreeItem } from './views/ProcessTreeProvider';
+import { ProcessCustomEditorProvider } from './providers/ProcessCustomEditorProvider';
 
 export function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel('Fluig Workflow');
@@ -18,6 +19,9 @@ export function activate(context: vscode.ExtensionContext) {
   const serverService = new ServerService(context);
   const exportService = new ProcessExportService(serverService);
   const importService = new ProcessImportService(serverService);
+
+  // Registra Custom Editor para arquivos .process
+  const customEditorRegistration = ProcessCustomEditorProvider.register(context);
 
   // Inicializa Provedores de TreeView
   const serverTreeProvider = new ServerTreeProvider(serverService);
@@ -188,7 +192,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       if (autoGen) {
         try {
-          Ecm30GeneratorService.ensureArtifacts(document.fileName, true);
+          Ecm30GeneratorService.ensureArtifacts(document.fileName, false);
           outputChannel.appendLine(`[Auto-compile] Atualizados artefatos ECM30/SVG para ${document.fileName}`);
         } catch (err: any) {
           outputChannel.appendLine(`[Auto-compile Error] ${err.message || err}`);
@@ -199,6 +203,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     outputChannel,
+    customEditorRegistration,
     addServerCmd,
     selectServerCmd,
     removeServerCmd,

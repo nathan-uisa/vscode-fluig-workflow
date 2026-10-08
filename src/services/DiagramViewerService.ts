@@ -25,153 +25,173 @@ export class DiagramViewerService {
         return;
       }
 
-      let processId = '';
-      let diagramsDir = '';
-      let scriptsDir = '';
-
+      let processPath = '';
       if (path.isAbsolute(targetPath)) {
         const basename = path.basename(targetPath);
-        processId = basename
+        const processId = basename
           .replace(/\.ecm30\.xml$/i, '')
           .replace(/\.process$/i, '')
           .replace(/\.svg$/i, '');
-        diagramsDir = path.dirname(targetPath);
-        const root = path.resolve(diagramsDir, '..', '..');
-        scriptsDir = path.join(root, 'workflow', 'scripts');
-        if (!fs.existsSync(scriptsDir)) {
-          scriptsDir = path.resolve(diagramsDir, '..', 'scripts');
-        }
+        const diagramsDir = path.dirname(targetPath);
+        processPath = path.join(diagramsDir, `${processId}.process`);
       } else {
-        processId = targetPath;
         const rootPath = workspaceFolder!.uri.fsPath;
-        diagramsDir = path.join(rootPath, 'workflow', 'diagrams');
-        scriptsDir = path.join(rootPath, 'workflow', 'scripts');
+        const diagramsDir = path.join(rootPath, 'workflow', 'diagrams');
+        processPath = path.join(diagramsDir, `${targetPath}.process`);
       }
 
+      const diagramsDir = path.dirname(processPath);
       if (!fs.existsSync(diagramsDir)) {
         fs.mkdirSync(diagramsDir, { recursive: true });
       }
-      if (!fs.existsSync(scriptsDir)) {
-        fs.mkdirSync(scriptsDir, { recursive: true });
-      }
 
-      const svgPath = path.join(diagramsDir, `${processId}.svg`);
-      const processPath = path.join(diagramsDir, `${processId}.process`);
-      const ecm30Path = path.join(diagramsDir, `${processId}.ecm30.xml`);
-
-      // Se não existir .process, cria modelo inicial básico
       if (!fs.existsSync(processPath)) {
+        const processId = path.basename(processPath, '.process');
         const initialProcessXml = this.createInitialProcessXmi(processId, processId);
         fs.writeFileSync(processPath, initialProcessXml, 'utf-8');
       }
 
-      // Se o SVG não existir mas o .process existir, auto-gera artefatos
-      if (!fs.existsSync(svgPath) && fs.existsSync(processPath)) {
-        try {
-          Ecm30GeneratorService.ensureArtifacts(processPath);
-        } catch (e) {
-          console.warn('Não foi possível auto-gerar SVG do .process:', e);
-        }
+      const fileUri = vscode.Uri.file(processPath);
+      await vscode.commands.executeCommand('vscode.openWith', fileUri, 'fluigWorkflow.diagramEditor');
+    } catch (error: any) {
+      vscode.window.showErrorMessage(`Erro ao abrir modelador de diagrama: ${error.message || error}`);
+    }
+  }
+
+  /**
+   * Vincula um WebviewPanel ao arquivo .process e aos artefatos relacionados
+   */
+  public static async attachWebview(
+    panel: vscode.WebviewPanel,
+    targetUri: vscode.Uri,
+    document?: vscode.TextDocument
+  ): Promise<void> {
+    const targetPath = targetUri.fsPath;
+    const basename = path.basename(targetPath);
+    const processId = basename
+      .replace(/\.ecm30\.xml$/i, '')
+      .replace(/\.process$/i, '')
+      .replace(/\.svg$/i, '');
+    const diagramsDir = path.dirname(targetPath);
+    const root = path.resolve(diagramsDir, '..', '..');
+    let scriptsDir = path.join(root, 'workflow', 'scripts');
+    if (!fs.existsSync(scriptsDir)) {
+      scriptsDir = path.resolve(diagramsDir, '..', 'scripts');
+    }
+
+    if (!fs.existsSync(diagramsDir)) {
+      fs.mkdirSync(diagramsDir, { recursive: true });
+    }
+    if (!fs.existsSync(scriptsDir)) {
+      fs.mkdirSync(scriptsDir, { recursive: true });
+    }
+
+    const svgPath = path.join(diagramsDir, `${processId}.svg`);
+    const processPath = path.join(diagramsDir, `${processId}.process`);
+    const ecm30Path = path.join(diagramsDir, `${processId}.ecm30.xml`);
+
+    // Se o SVG não existir mas o .process existir, auto-gera artefatos
+    if (!fs.existsSync(svgPath) && (fs.existsSync(processPath) || (document && document.getText().trim() !== ''))) {
+      try {
+        Ecm30GeneratorService.ensureArtifacts(processPath);
+      } catch (e) {
+        console.warn('Não foi possível auto-gerar SVG do .process:', e);
       }
+    }
 
-      // Verifica se já tem painel aberto para esse processo
-      const existingPanel = this.activePanels.get(processId);
-      if (existingPanel) {
-        existingPanel.reveal(vscode.ViewColumn.Active);
-        this.updatePanelContent(existingPanel, processId, diagramsDir, scriptsDir);
-        return;
-      }
+    this.activePanels.set(processId, panel);
+    panel.onDidDispose(() => {
+      this.activePanels.delete(processId);
+    });
 
-      // Prepara os roots locais permitidos
-      const localResourceRoots = [
-        vscode.Uri.file(diagramsDir)
-      ];
-      if (this.extensionUri) {
-        localResourceRoots.push(vscode.Uri.file(path.join(this.extensionUri.fsPath, 'resources')));
-      }
+    const localResourceRoots = [
+      vscode.Uri.file(diagramsDir)
+    ];
+    if (this.extensionUri) {
+      localResourceRoots.push(vscode.Uri.file(path.join(this.extensionUri.fsPath, 'resources')));
+    }
 
-      // Cria novo WebviewPanel
-      const panel = vscode.window.createWebviewPanel(
-        'fluigWorkflowDiagram',
-        `Fluig BPMN: ${processId}`,
-        vscode.ViewColumn.Active,
-        {
-          enableScripts: true,
-          retainContextWhenHidden: true,
-          localResourceRoots
-        }
-      );
+    panel.webview.options = {
+      enableScripts: true,
+      localResourceRoots
+    };
 
-      this.activePanels.set(processId, panel);
+    // Configura listener de mensagens do Webview
+    panel.webview.onDidReceiveMessage(async message => {
+      switch (message.command) {
+        case 'saveProcess': {
+          try {
+            const { xml, svg, processDescription, formId } = message;
 
-      panel.onDidDispose(() => {
-        this.activePanels.delete(processId);
-      });
+            // 1. Salva o .process com formatação XMI compatível com Fluig TDS
+            const wrappedProcessXml = this.wrapProcessXml(xml);
 
-      // Configura listener de mensagens do Webview
-      panel.webview.onDidReceiveMessage(async message => {
-        switch (message.command) {
-          case 'saveProcess': {
-            try {
-              const { xml, svg, processDescription, formId } = message;
-
-              // 1. Salva o .process com formatação XMI compatível com Fluig TDS
-              const wrappedProcessXml = this.wrapProcessXml(xml);
-              fs.writeFileSync(processPath, wrappedProcessXml, 'utf-8');
-
-              // 2. Salva o .svg atualizado
-              if (svg) {
-                fs.writeFileSync(svgPath, svg, 'utf-8');
-              }
-
-              // 3. Atualiza o .ecm30.xml
-              if (fs.existsSync(ecm30Path)) {
-                let ecmXml = fs.readFileSync(ecm30Path, 'utf-8');
-                if (svg) {
-                  const escapedSvg = this.escapeXml(svg);
-                  if (ecmXml.includes('<processDiagram>')) {
-                    ecmXml = ecmXml.replace(/<processDiagram>[\s\S]*?<\/processDiagram>/, `<processDiagram>${escapedSvg}</processDiagram>`);
-                  }
-                }
-                if (processDescription) {
-                  ecmXml = ecmXml.replace(/<processDescription>[\s\S]*?<\/processDescription>/, `<processDescription>${this.escapeXml(processDescription)}</processDescription>`);
-                }
-                if (formId !== undefined && formId !== '') {
-                  ecmXml = ecmXml.replace(/<formId>[\s\S]*?<\/formId>/, `<formId>${formId}</formId>`);
-                }
-                fs.writeFileSync(ecm30Path, ecmXml, 'utf-8');
-              } else {
-                Ecm30GeneratorService.ensureArtifacts(processPath, true);
-              }
-
-              panel.webview.postMessage({ command: 'saveResult', success: true });
-              vscode.window.showInformationMessage(`Processo ${processId} salvo com sucesso!`);
-            } catch (saveErr: any) {
-              panel.webview.postMessage({ command: 'saveResult', success: false, error: saveErr.message });
-              vscode.window.showErrorMessage(`Erro ao salvar processo: ${saveErr.message || saveErr}`);
-            }
-            break;
-          }
-
-          case 'openScript': {
-            const scriptPath = path.join(scriptsDir, message.filename);
-            if (fs.existsSync(scriptPath)) {
-              const doc = await vscode.workspace.openTextDocument(scriptPath);
-              await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside });
+            if (document) {
+              const edit = new vscode.WorkspaceEdit();
+              const fullRange = new vscode.Range(
+                document.positionAt(0),
+                document.positionAt(document.getText().length)
+              );
+              edit.replace(document.uri, fullRange, wrappedProcessXml);
+              await vscode.workspace.applyEdit(edit);
+              await document.save();
             } else {
-              vscode.window.showWarningMessage(`Arquivo de script não encontrado: ${message.filename}`);
+              fs.writeFileSync(processPath, wrappedProcessXml, 'utf-8');
             }
-            break;
+
+            // 2. Salva o .svg atualizado
+            if (svg) {
+              fs.writeFileSync(svgPath, svg, 'utf-8');
+            }
+
+            // 3. Atualiza o .ecm30.xml
+            if (fs.existsSync(ecm30Path)) {
+              let ecmXml = fs.readFileSync(ecm30Path, 'utf-8');
+              if (svg) {
+                const escapedSvg = this.escapeXml(svg);
+                if (ecmXml.includes('<processDiagram>')) {
+                  ecmXml = ecmXml.replace(/<processDiagram>[\s\S]*?<\/processDiagram>/, `<processDiagram>${escapedSvg}</processDiagram>`);
+                }
+              }
+              if (processDescription) {
+                ecmXml = ecmXml.replace(/<processDescription>[\s\S]*?<\/processDescription>/, `<processDescription>${this.escapeXml(processDescription)}</processDescription>`);
+              }
+              if (formId !== undefined && formId !== '') {
+                ecmXml = ecmXml.replace(/<formId>[\s\S]*?<\/formId>/, `<formId>${formId}</formId>`);
+              }
+              fs.writeFileSync(ecm30Path, ecmXml, 'utf-8');
+            } else {
+              Ecm30GeneratorService.ensureArtifacts(processPath, true);
+            }
+
+            panel.webview.postMessage({ command: 'saveResult', success: true });
+            vscode.window.showInformationMessage(`Processo ${processId} salvo com sucesso!`);
+          } catch (saveErr: any) {
+            panel.webview.postMessage({ command: 'saveResult', success: false, error: saveErr.message });
+            vscode.window.showErrorMessage(`Erro ao salvar processo: ${saveErr.message || saveErr}`);
           }
+          break;
+        }
 
-          case 'createServiceScript': {
-            const { elementId, elementName } = message;
-            const seqMatch = elementId.match(/\d+/);
-            const scriptName = seqMatch ? `${processId}.servicetask${seqMatch[0]}.js` : `${processId}.${elementId}.js`;
-            const scriptPath = path.join(scriptsDir, scriptName);
+        case 'openScript': {
+          const scriptPath = path.join(scriptsDir, message.filename);
+          if (fs.existsSync(scriptPath)) {
+            const doc = await vscode.workspace.openTextDocument(scriptPath);
+            await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside });
+          } else {
+            vscode.window.showWarningMessage(`Arquivo de script não encontrado: ${message.filename}`);
+          }
+          break;
+        }
 
-            if (!fs.existsSync(scriptPath)) {
-              const template = `/**
+        case 'createServiceScript': {
+          const { elementId, elementName } = message;
+          const seqMatch = elementId.match(/\d+/);
+          const scriptName = seqMatch ? `${processId}.servicetask${seqMatch[0]}.js` : `${processId}.${elementId}.js`;
+          const scriptPath = path.join(scriptsDir, scriptName);
+
+          if (!fs.existsSync(scriptPath)) {
+            const template = `/**
  * Script de Execução da Tarefa de Serviço: ${elementName || elementId}
  * Processo: ${processId}
  *
@@ -192,67 +212,64 @@ function servicetask(attempt, message) {
   }
 }
 `;
-              fs.writeFileSync(scriptPath, template, 'utf-8');
-            }
-
-            const doc = await vscode.workspace.openTextDocument(scriptPath);
-            await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside });
-            this.updatePanelContent(panel, processId, diagramsDir, scriptsDir);
-            break;
+            fs.writeFileSync(scriptPath, template, 'utf-8');
           }
 
-          case 'openFile': {
-            const filePath = message.filePath;
-            if (fs.existsSync(filePath)) {
-              try {
-                await vscode.commands.executeCommand('vscode.openWith', vscode.Uri.file(filePath), 'default', vscode.ViewColumn.Beside);
-              } catch {
-                const doc = await vscode.workspace.openTextDocument(filePath);
-                await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside });
-              }
-            }
-            break;
-          }
-
-          case 'exportProcess': {
-            await vscode.commands.executeCommand('fluigWorkflow.exportProcess', vscode.Uri.file(processPath));
-            break;
-          }
-
-          case 'createEventScript': {
-            const stdEvents = WorkflowRestService.getStandardWorkflowEvents();
-            const picked = await vscode.window.showQuickPick(
-              stdEvents.map(e => ({
-                label: e.name,
-                description: e.description,
-                template: e.template
-              })),
-              { placeHolder: 'Selecione o evento Fluig para criar o script' }
-            );
-
-            if (picked) {
-              const newFile = path.join(scriptsDir, `${processId}.${picked.label}.js`);
-              if (!fs.existsSync(newFile)) {
-                fs.writeFileSync(newFile, picked.template, 'utf-8');
-              }
-              const doc = await vscode.workspace.openTextDocument(newFile);
-              await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside });
-              this.updatePanelContent(panel, processId, diagramsDir, scriptsDir);
-            }
-            break;
-          }
-
-          case 'refresh': {
-            this.updatePanelContent(panel, processId, diagramsDir, scriptsDir);
-            break;
-          }
+          const doc = await vscode.workspace.openTextDocument(scriptPath);
+          await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside });
+          this.updatePanelContent(panel, processId, diagramsDir, scriptsDir, document);
+          break;
         }
-      });
 
-      this.updatePanelContent(panel, processId, diagramsDir, scriptsDir);
-    } catch (error: any) {
-      vscode.window.showErrorMessage(`Erro ao abrir modelador de diagrama: ${error.message || error}`);
-    }
+        case 'openFile': {
+          const filePath = message.filePath;
+          if (fs.existsSync(filePath)) {
+            try {
+              await vscode.commands.executeCommand('vscode.openWith', vscode.Uri.file(filePath), 'default', vscode.ViewColumn.Beside);
+            } catch {
+              const doc = await vscode.workspace.openTextDocument(filePath);
+              await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside });
+            }
+          }
+          break;
+        }
+
+        case 'exportProcess': {
+          await vscode.commands.executeCommand('fluigWorkflow.exportProcess', vscode.Uri.file(processPath));
+          break;
+        }
+
+        case 'createEventScript': {
+          const stdEvents = WorkflowRestService.getStandardWorkflowEvents();
+          const picked = await vscode.window.showQuickPick(
+            stdEvents.map(e => ({
+              label: e.name,
+              description: e.description,
+              template: e.template
+            })),
+            { placeHolder: 'Selecione o evento Fluig para criar o script' }
+          );
+
+          if (picked) {
+            const newFile = path.join(scriptsDir, `${processId}.${picked.label}.js`);
+            if (!fs.existsSync(newFile)) {
+              fs.writeFileSync(newFile, picked.template, 'utf-8');
+            }
+            const doc = await vscode.workspace.openTextDocument(newFile);
+            await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside });
+            this.updatePanelContent(panel, processId, diagramsDir, scriptsDir, document);
+          }
+          break;
+        }
+
+        case 'refresh': {
+          this.updatePanelContent(panel, processId, diagramsDir, scriptsDir, document);
+          break;
+        }
+      }
+    });
+
+    this.updatePanelContent(panel, processId, diagramsDir, scriptsDir, document);
   }
 
   /**
@@ -262,7 +279,8 @@ function servicetask(attempt, message) {
     panel: vscode.WebviewPanel,
     processId: string,
     diagramsDir: string,
-    scriptsDir: string
+    scriptsDir: string,
+    document?: vscode.TextDocument
   ): void {
     const svgPath = path.join(diagramsDir, `${processId}.svg`);
     const processPath = path.join(diagramsDir, `${processId}.process`);
@@ -276,7 +294,10 @@ function servicetask(attempt, message) {
 
     // Lê BPMN XML e descompacta para formato suportado pelo bpmn-js
     let bpmnXml = '';
-    if (fs.existsSync(processPath)) {
+    if (document && document.getText().trim() !== '') {
+      const rawProcess = document.getText();
+      bpmnXml = this.unwrapProcessXml(rawProcess, processId);
+    } else if (fs.existsSync(processPath)) {
       const rawProcess = fs.readFileSync(processPath, 'utf-8');
       bpmnXml = this.unwrapProcessXml(rawProcess, processId);
     } else {

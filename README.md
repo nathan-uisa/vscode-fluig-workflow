@@ -80,6 +80,46 @@ meu-projeto-fluig/
 
 ---
 
+## Instalacao
+
+### Opcao 1: Download da Release no GitHub (Recomendado)
+
+1. Acesse a pagina de Releases do repositorio:
+   [GitHub Releases - vscode-fluig-workflow](https://github.com/nathan-uisa/vscode-fluig-workflow/releases/latest)
+2. Faca o download do arquivo `vscode-fluig-workflow-0.1.6.vsix`.
+3. No VS Code:
+   - Abra a aba de **Extensoes** (`Ctrl + Shift + X`).
+   - Clique no menu de tres pontinhos (`...`) no canto superior do painel de extensoes.
+   - Selecione **Instalar a partir de VSIX...** (`Install from VSIX...`) e selecione o arquivo baixado.
+
+**Ou instale via terminal em 1 comando:**
+```powershell
+Invoke-WebRequest -Uri "https://github.com/nathan-uisa/vscode-fluig-workflow/releases/download/v0.1.6/vscode-fluig-workflow-0.1.6.vsix" -OutFile "vscode-fluig-workflow.vsix"; code --install-extension vscode-fluig-workflow.vsix
+```
+
+### Opcao 2: A partir do Codigo Fonte
+
+```bash
+git clone https://github.com/nathan-uisa/vscode-fluig-workflow.git
+cd vscode-fluig-workflow
+npm install
+npm run compile
+npx @vscode/vsce package --no-dependencies
+code --install-extension vscode-fluig-workflow-0.1.6.vsix
+```
+
+### Definir como Editor Padrao para `.process`
+
+Para garantir que o duplo clique em qualquer arquivo `.process` abra diretamente este modelador visual moderno (e nao extensao de terceiros com dependencias do Eclipse), adicione ao seu `settings.json` do VS Code:
+
+```json
+"workbench.editorAssociations": {
+  "*.process": "fluigWorkflow.diagramEditor"
+}
+```
+
+---
+
 ## Como Usar
 
 ### 1. Cadastrar um Servidor Fluig
@@ -142,7 +182,7 @@ npx @vscode/vsce package
 
 E para instalar no VS Code:
 ```bash
-code --install-extension vscode-fluig-workflow-0.1.5.vsix
+code --install-extension vscode-fluig-workflow-0.1.6.vsix
 ```
 
 ---

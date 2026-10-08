@@ -865,7 +865,14 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
     #bpmnCanvas {
       width: 100%;
       height: 100%;
-      background: #fafafa;
+      background-color: #fafbfc;
+      background-image:
+        linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+        linear-gradient(to right, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+      background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+      background-position: 0 0, 0 0, 0 0, 0 0;
     }
 
     #svgCanvas {
@@ -915,6 +922,11 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
     .floating-toolbar button {
       padding: 4px 8px;
       font-size: 13px;
+    }
+
+    .floating-toolbar button.active {
+      background-color: var(--btn-bg);
+      color: #ffffff;
     }
 
     .zoom-text {
@@ -1153,6 +1165,7 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
         <button class="secondary" onclick="zoomOut()" title="Afastar">-</button>
         <button class="secondary" onclick="resetZoom()" title="Resetar Zoom">100%</button>
         <button class="secondary" onclick="fitToScreen()" title="Ajustar à Tela">Ajustar</button>
+        <button id="btnToggleGrid" class="secondary active" onclick="toggleGrid()" title="Alternar Grade">Grade</button>
       </div>
     </div>
 
@@ -1254,9 +1267,18 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
 
         const canvas = modeler.get('canvas');
         canvas.zoom('fit-viewport');
+        updateGrid(canvas.viewbox());
 
         // Listener de seleção de elemento
         const eventBus = modeler.get('eventBus');
+
+        // Sincroniza grade e indicador de zoom com navegacao do canvas
+        eventBus.on('canvas.viewbox.changed', (e) => {
+          if (e && e.viewbox) {
+            updateGrid(e.viewbox);
+            updateZoomDisplay(Math.round(e.viewbox.scale * 100));
+          }
+        });
         eventBus.on('selection.changed', (e) => {
           if (e.newSelection && e.newSelection.length > 0) {
             renderSelectedElement(e.newSelection[0]);
@@ -1683,12 +1705,60 @@ ${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
     }
 
     function updateZoomDisplay(val) {
-      zoomText.innerText = \`\${val}%\`;
+      zoomText.innerText = val + '%';
     }
 
     function updateSvgTransform() {
-      svgBox.style.transform = \`translate(\${svgTranslateX}px, \${svgTranslateY}px) scale(\${svgScale})\`;
+      svgBox.style.transform = 'translate(' + svgTranslateX + 'px, ' + svgTranslateY + 'px) scale(' + svgScale + ')';
       updateZoomDisplay(Math.round(svgScale * 100));
+    }
+
+    let isGridVisible = true;
+
+    function updateGrid(viewbox) {
+      const el = document.getElementById('bpmnCanvas');
+      if (!el) return;
+      if (!isGridVisible) {
+        el.style.backgroundImage = 'none';
+        return;
+      }
+
+      if (!viewbox && modeler) {
+        try {
+          viewbox = modeler.get('canvas').viewbox();
+        } catch (e) {}
+      }
+
+      if (!viewbox) return;
+
+      const scale = viewbox.scale || 1;
+      const minor = 20 * scale;
+      const major = 100 * scale;
+      const px = -viewbox.x * scale;
+      const py = -viewbox.y * scale;
+
+      if (scale < 0.45) {
+        el.style.backgroundImage = 'linear-gradient(to right, rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.08) 1px, transparent 1px)';
+        el.style.backgroundSize = major + 'px ' + major + 'px';
+        el.style.backgroundPosition = px + 'px ' + py + 'px, ' + px + 'px ' + py + 'px';
+      } else {
+        el.style.backgroundImage = 'linear-gradient(to right, rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.035) 1px, transparent 1px)';
+        el.style.backgroundSize = major + 'px ' + major + 'px, ' + major + 'px ' + major + 'px, ' + minor + 'px ' + minor + 'px, ' + minor + 'px ' + minor + 'px';
+        el.style.backgroundPosition = px + 'px ' + py + 'px, ' + px + 'px ' + py + 'px, ' + px + 'px ' + py + 'px, ' + px + 'px ' + py + 'px';
+      }
+    }
+
+    function toggleGrid() {
+      isGridVisible = !isGridVisible;
+      const btn = document.getElementById('btnToggleGrid');
+      if (btn) {
+        if (isGridVisible) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      }
+      updateGrid();
     }
 
     function fitSvgToScreen() {

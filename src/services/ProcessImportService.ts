@@ -79,7 +79,7 @@ export class ProcessImportService {
         fs.mkdirSync(scriptsDir, { recursive: true });
       }
 
-      await vscode.window.withProgress(
+      const result = await vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
           title: `Importando processo ${processId}...`,
@@ -173,17 +173,28 @@ export class ProcessImportService {
             }
           }
 
-          const action = await vscode.window.showInformationMessage(
-            `Processo ${processId} importado com sucesso! (${createdScripts} scripts de eventos, diagrama BPMN e SVG salvos em workflow/)`,
-            'Abrir Diagrama'
-          );
-
-          if (action === 'Abrir Diagrama') {
-            const doc = await vscode.workspace.openTextDocument(processFilePath);
-            await vscode.window.showTextDocument(doc);
-          }
+          return { processFilePath, createdScripts };
         }
       );
+
+      // Notifica o explorer para atualizar a árvore de processos
+      try {
+        await vscode.commands.executeCommand('fluigWorkflow.refreshProcesses');
+      } catch (cmdErr) {
+        console.warn('Erro ao atualizar árvore de processos:', cmdErr);
+      }
+
+      if (result) {
+        const action = await vscode.window.showInformationMessage(
+          `Processo ${processId} importado com sucesso! (${result.createdScripts} scripts de eventos, diagrama BPMN e SVG salvos em workflow/)`,
+          'Abrir Diagrama'
+        );
+
+        if (action === 'Abrir Diagrama' && fs.existsSync(result.processFilePath)) {
+          const doc = await vscode.workspace.openTextDocument(result.processFilePath);
+          await vscode.window.showTextDocument(doc);
+        }
+      }
     } catch (error: any) {
       vscode.window.showErrorMessage(`Erro ao importar processo: ${error.message || error}`);
     }

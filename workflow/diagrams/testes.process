@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="ASCII"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI">
+  <bpmn2:definitions id="Definitions_1" targetNamespace="http://www.fluig.com/bpm">
+    <bpmn2:process id="testes" name="testes" isExecutable="true">
+      <bpmn2:startEvent id="startevent4" name="Início"/>
+      <bpmn2:endEvent id="endevent9" name="Fim"/>
+      <bpmn2:serviceTask id="servicetask10" name="Cria plano de Ação"/>
+      <bpmn2:intermediateCatchEvent id="intermediateevent13" name="Intermediário"/>
+      <bpmn2:exclusiveGateway id="exclusivegateway15" name="Exclusivo"/>
+      <bpmn2:endEvent id="endevent17" name="Fim"/>
+      <bpmn2:sequenceFlow id="flow12" sourceRef="servicetask10" targetRef="endevent9" name=""/>
+      <bpmn2:sequenceFlow id="flow14" sourceRef="intermediateevent13" targetRef="endevent9" name=""/>
+      <bpmn2:sequenceFlow id="flow16" sourceRef="exclusivegateway15" targetRef="servicetask10" name=""/>
+      <bpmn2:sequenceFlow id="flow18" sourceRef="exclusivegateway15" targetRef="endevent17" name=""/>
+      <bpmn2:sequenceFlow id="flow19" sourceRef="startevent4" targetRef="exclusivegateway15" name=""/>
+    </bpmn2:process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_1" name="testes">
+      <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="testes">
+      <bpmndi:BPMNShape id="BPMNShape_startevent4" bpmnElement="startevent4">
+        <dc:Bounds height="35.0" width="35.0" x="110.0" y="160.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_endevent9" bpmnElement="endevent9">
+        <dc:Bounds height="35.0" width="35.0" x="490.0" y="160.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_servicetask10" bpmnElement="servicetask10">
+        <dc:Bounds height="85.0" width="106.0" x="320.0" y="135.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_intermediateevent13" bpmnElement="intermediateevent13">
+        <dc:Bounds height="35.0" width="35.0" x="396.0" y="200.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_exclusivegateway15" bpmnElement="exclusivegateway15">
+        <dc:Bounds height="60.0" width="60.0" x="180.0" y="119.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_endevent17" bpmnElement="endevent17">
+        <dc:Bounds height="35.0" width="35.0" x="192.0" y="260.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_flow12" bpmnElement="flow12">
+        <di:waypoint x="0" y="0"/>
+        <di:waypoint x="0" y="0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_flow14" bpmnElement="flow14">
+        <di:waypoint x="0" y="0"/>
+        <di:waypoint x="0" y="0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_flow16" bpmnElement="flow16">
+        <di:waypoint x="0" y="0"/>
+        <di:waypoint x="0" y="0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_flow18" bpmnElement="flow18">
+        <di:waypoint x="0" y="0"/>
+        <di:waypoint x="0" y="0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_flow19" bpmnElement="flow19">
+        <di:waypoint x="0" y="0"/>
+        <di:waypoint x="0" y="0"/>
+      </bpmndi:BPMNEdge>
+      </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+  </bpmn2:definitions>
+</xmi:XMI>

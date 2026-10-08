@@ -21,10 +21,16 @@ export class WorkflowRestService {
     try {
       const response = await fetch(url, {
         method: 'GET',
-        headers: this.getAuthHeader()
+        headers: this.getAuthHeader(),
+        signal: AbortSignal.timeout(5000)
       });
 
       if (!response.ok) {
+        return null;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
         return null;
       }
 
@@ -49,10 +55,16 @@ export class WorkflowRestService {
     try {
       const response = await fetch(url, {
         method: 'GET',
-        headers: this.getAuthHeader()
+        headers: this.getAuthHeader(),
+        signal: AbortSignal.timeout(5000)
       });
 
       if (!response.ok) {
+        return [];
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
         return [];
       }
 

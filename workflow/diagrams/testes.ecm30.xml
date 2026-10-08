@@ -1,0 +1,619 @@
+<list>
+  <ProcessDefinition>
+    <processDefinitionPK>
+      <companyId>1</companyId>
+      <processId>testes</processId>
+    </processDefinitionPK>
+    <processDescription>testes</processDescription>
+    <instruction></instruction>
+    <active>false</active>
+    <publicProcess>false</publicProcess>
+    <volumeId>Default</volumeId>
+    <categoryId></categoryId>
+    <managerEngineAllocationId></managerEngineAllocationId>
+    <managerEngineAllocationConfiguration></managerEngineAllocationConfiguration>
+    <snapshotFrequency>0</snapshotFrequency>
+    <baseDay>0</baseDay>
+    <baseMonth>0</baseMonth>
+    <periodId>Default</periodId>
+    <keyWord></keyWord>
+    <uniqueCardVersion>false</uniqueCardVersion>
+    <complementsLevel>1</complementsLevel>
+    <notifyRequisitionerComplements>true</notifyRequisitionerComplements>
+    <notifyManagerComplements>false</notifyManagerComplements>
+    <notifyAuthorityComplements>true</notifyAuthorityComplements>
+    <deadlineTime>0</deadlineTime>
+    <warningDeadlineTime>0</warningDeadlineTime>
+    <processCategoryId>969C7B35-8BAB-4091-ABD6-1C57E3140D04</processCategoryId>
+    <icon>animaliaicon-tree-structure</icon>
+  </ProcessDefinition>
+  <ProcessDefinitionVersion>
+    <processDefinitionVersionPK>
+      <companyId>1</companyId>
+      <processId>testes</processId>
+      <version>7</version>
+    </processDefinitionVersionPK>
+    <versionDescription></versionDescription>
+    <formId>489294</formId>
+    <editionMode>false</editionMode>
+    <updateAttachmentsVersion>false</updateAttachmentsVersion>
+    <controlsAttachmentsSecurity>false</controlsAttachmentsSecurity>
+    <active>true</active>
+    <blockedVersion>false</blockedVersion>
+    <counterSign>false</counterSign>
+    <processDiagram>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;svg xmlns="http://www.w3.org/2000/svg" style="stroke-dasharray:none; shape-rendering:auto; font-family:'Arial'; text-rendering:auto; fill-opacity:1; color-interpolation:auto; color-rendering:auto; font-size:12; fill:black; stroke:black; image-rendering:auto; stroke-miterlimit:10; stroke-linecap:square; stroke-linejoin:miter; font-style:normal; stroke-width:1; stroke-dashoffset:0; font-weight:normal; stroke-opacity:1;" contentScriptType="text/ecmascript" preserveAspectRatio="xMidYMid meet" zoomAndPan="magnify" version="1.0" contentStyleType="text/css" xml:xlink="http://www.w3.org/1999/xlink" width="451" height="311"&gt;&lt;rect x="80" y="80" width="371" height="231" ry="0" rx="0" style="stroke:#000000; fill:#FFFFFF" /&gt;&lt;g componentSequence="1"&gt;&lt;text x="-195" y="89" transform="rotate(270)" text-anchor="middle" style="font-weight:bold;font-size:10px;stroke:none; fill:#434343"&gt;&lt;tspan dy="14" x="-195"&gt;Pool&lt;/tspan&gt;&lt;/text&gt;&lt;/g&gt;&lt;g sequence="4"&gt;&lt;ellipse cx="127" cy="187" rx="17" ry="17" stroke-width="1" style="fill:url(#linearGradient66FF6696FF96B6FFB6_1776528476);" stroke="336633" /&gt;&lt;/g&gt;&lt;g sequence="9"&gt;&lt;ellipse cx="397" cy="187" rx="17" ry="17" stroke-width="3" style="fill:url(#linearGradientFF6666FF9696FFB6B6_2091696408);" stroke="993333" /&gt;&lt;/g&gt;&lt;g sequence="10"&gt;&lt;rect x="200" y="145" width="106" height="85" ry="5" rx="5" style="fill:url(#linearGradientF8FBFEEDF5FCDEEDFAD4E7F8E2E5E9_1087209811);" stroke="191970" /&gt;&lt;/g&gt;&lt;g componentSequence="10"&gt;&lt;text x="253" y="160" text-anchor="middle" style="font-weight:bold;font-size:10px;stroke:none; fill:#333399"&gt;&lt;tspan dy="14" x="253"&gt;Cria plano&lt;/tspan&gt;&lt;tspan dy="14" x="253"&gt;de Ação&lt;/tspan&gt;&lt;/text&gt;&lt;/g&gt;&lt;g sequence="10"&gt;&lt;image x="205" y="150" width="16" height="16" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:actuate="onLoad" xlink:show="embed" preserveAspectRatio="none" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACMUlEQVR42nVTv2taURR+g+AfIOjUUIe2q4ODQ4eWtosiCIKDQirYQQpCZycFhXR2cKhtuoqCIP4gqaCIYJJWaCXBgDpoBWvVPolPq6bm67vHeI0ED1zud84977vnfO9cATvM6XRCEARaHo9nVxqEu47P50M8Hies1+uRyWRxcnoKjUZDsWQySYSLxWKbQJIkfhtb+Xye9mKxiFarDYVCgWw2S7FcLkf7cDjcEHQ6HQoeH39Bv98nbLPZ8FvGi+tr7O+/pli7/RNXV2PCjUZjuwW/3w+lUonBYMU8HP7hFfV6PYrN53PyC4XCpgVWUiQS4WVPJlMcHn4mbDabYbFYCB8cvMdsNiOcTqcRDocRjUaZv+k9kUjILQwIM0HXFggEKFav19FoNrf0IoKxNN2UJPtGoxHL5ZLHGLbb7XS2trUWWxVcXtZoN5lM9wgcDgedieKI53u93o2IbrcbZ2dfMRJFOmSiri0YDHLlz88v6IJut7uquNVqwX7L3hPHFPzw8RP5TECr1UqY6bCamQm1qFKpUKlUIFSrVUr4Jx/+Eicof/sBSR60o0KZl9qUhbu5AUqlkjydGYzHq/5jsdiqBerlNtlgMNDHjFCcLDCS/tLNz1+8hE6ng1arpTyXy7U9yqwNNgtqtRq1ZhvidM5JR9IM36sX/E2wOWATe+8xMbVZBW/evsPTZ68Ih0IhPNh7iFq9iUePn8iTOtj9GhlBKpXiN5fLZfm3idxnU3v3JTL7DwtyzXGuJexyAAAAAElFTkSuQmCC" /&gt;&lt;/g&gt;&lt;g sequence="13"&gt;&lt;ellipse cx="245" cy="230" rx="15" ry="15" stroke-width="1" style="fill:url(#linearGradientFFFF66FFFF96FFFFB6_101090666);" stroke="999900" /&gt;&lt;/g&gt;&lt;g sequence="13"&gt;&lt;polygon points=" 236 240 242 220 248 230 256 220 248 240 242 230" style="stroke:#999900; fill:none" /&gt;&lt;/g&gt;&lt;g componentSequence="12"&gt;&lt;text x="353" y="187" style="font-size:10px;font-weight:none;stroke:none; fill:#333399" text-anchor="left" /&gt;&lt;/g&gt;&lt;g componentSequence="15"&gt;&lt;text x="182" y="187" style="font-size:10px;font-weight:none;stroke:none; fill:#333399" text-anchor="left" /&gt;&lt;/g&gt;&lt;g componentSequence="16"&gt;&lt;text x="351" y="253" style="font-size:10px;font-weight:none;stroke:none; fill:#333399" text-anchor="left" /&gt;&lt;/g&gt;&lt;path style="fill:none; stroke:#000000;stroke-width:1" d="M306.0 186.0 L378.0 186.0" /&gt;&lt;polygon style="fill:#000000; stroke:#000000;" points=" 368 181 378 186 368 191 370 186" /&gt;&lt;path style="fill:none; stroke:#000000;stroke-width:1" d="M145.0 186.0 L198.0 186.0" /&gt;&lt;polygon style="fill:#000000; stroke:#000000;" points=" 188 181 198 186 188 191 190 186" /&gt;&lt;path style="fill:none; stroke:#000000;stroke-width:1" d="M244.0 245.0 L244.0 252.0 L396.0 253.0 L396.0 204.0" /&gt;&lt;polygon style="fill:#000000; stroke:#000000;" points=" 391 214 396 204 401 214 396 212" /&gt;&lt;defs&gt;&lt;linearGradient xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#linearGradient66FF6696FF96B6FFB6" id="linearGradient66FF6696FF96B6FFB6_1776528476" x1="0" y1="170.0" x2="0" y2="205.0" gradientUnits="userSpaceOnUse" xlink:type="simple" xlink:actuate="onLoad" xlink:show="other" /&gt;&lt;linearGradient id="linearGradient66FF6696FF96B6FFB6"&gt;&lt;stop style="stop-color:#66FF66;stop-opacity:1;" offset="0.0" id="stop66FF66" /&gt;&lt;stop style="stop-color:#96FF96;stop-opacity:1;" offset="0.5" id="stop96FF96" /&gt;&lt;stop style="stop-color:#B6FFB6;stop-opacity:1;" offset="1.0" id="stopB6FFB6" /&gt;&lt;/linearGradient&gt;&lt;linearGradient xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#linearGradientFF6666FF9696FFB6B6" id="linearGradientFF6666FF9696FFB6B6_2091696408" x1="0" y1="170.0" x2="0" y2="205.0" gradientUnits="userSpaceOnUse" xlink:type="simple" xlink:actuate="onLoad" xlink:show="other" /&gt;&lt;linearGradient id="linearGradientFF6666FF9696FFB6B6"&gt;&lt;stop style="stop-color:#FF6666;stop-opacity:1;" offset="0.0" id="stopFF6666" /&gt;&lt;stop style="stop-color:#FF9696;stop-opacity:1;" offset="0.5" id="stopFF9696" /&gt;&lt;stop style="stop-color:#FFB6B6;stop-opacity:1;" offset="1.0" id="stopFFB6B6" /&gt;&lt;/linearGradient&gt;&lt;linearGradient xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#linearGradientF8FBFEEDF5FCDEEDFAD4E7F8E2E5E9" id="linearGradientF8FBFEEDF5FCDEEDFAD4E7F8E2E5E9_1087209811" x1="0" y1="145.0" x2="0" y2="251.0" gradientUnits="userSpaceOnUse" xlink:type="simple" xlink:actuate="onLoad" xlink:show="other" /&gt;&lt;linearGradient id="linearGradientF8FBFEEDF5FCDEEDFAD4E7F8E2E5E9"&gt;&lt;stop style="stop-color:#F8FBFE;stop-opacity:1;" offset="0.0" id="stopF8FBFE" /&gt;&lt;stop style="stop-color:#EDF5FC;stop-opacity:1;" offset="0.25" id="stopEDF5FC" /&gt;&lt;stop style="stop-color:#DEEDFA;stop-opacity:1;" offset="0.5" id="stopDEEDFA" /&gt;&lt;stop style="stop-color:#D4E7F8;stop-opacity:1;" offset="0.75" id="stopD4E7F8" /&gt;&lt;stop style="stop-color:#E2E5E9;stop-opacity:1;" offset="1.0" id="stopE2E5E9" /&gt;&lt;/linearGradient&gt;&lt;linearGradient xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#linearGradientFFFF66FFFF96FFFFB6" id="linearGradientFFFF66FFFF96FFFFB6_101090666" x1="0" y1="215.0" x2="0" y2="245.0" gradientUnits="userSpaceOnUse" xlink:type="simple" xlink:actuate="onLoad" xlink:show="other" /&gt;&lt;linearGradient id="linearGradientFFFF66FFFF96FFFFB6"&gt;&lt;stop style="stop-color:#FFFF66;stop-opacity:1;" offset="0.0" id="stopFFFF66" /&gt;&lt;stop style="stop-color:#FFFF96;stop-opacity:1;" offset="0.5" id="stopFFFF96" /&gt;&lt;stop style="stop-color:#FFFFB6;stop-opacity:1;" offset="1.0" id="stopFFFFB6" /&gt;&lt;/linearGradient&gt;&lt;/defs&gt;&lt;/svg&gt;</processDiagram>
+    <bpmnVersion>2</bpmnVersion>
+    <inheritFormSecurity>false</inheritFormSecurity>
+    <formIdV2>0</formIdV2>
+    <openInstances>0</openInstances>
+    <processStates/>
+    <favorito>false</favorito>
+    <mobileReady>true</mobileReady>
+    <rowId>0</rowId>
+  </ProcessDefinitionVersion>
+  <list>
+    <ProcessState>
+      <processStatePK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <sequence>4</sequence>
+      </processStatePK>
+      <stateName>Início</stateName>
+      <stateDescription>Início</stateDescription>
+      <instruction></instruction>
+      <deadlineTime>0</deadlineTime>
+      <joint>false</joint>
+      <agreementPercentage>0</agreementPercentage>
+      <engineAllocationId></engineAllocationId>
+      <engineAllocationConfiguration></engineAllocationConfiguration>
+      <selectColleague>1</selectColleague>
+      <initialState>true</initialState>
+      <notifyAuthorityDelay>true</notifyAuthorityDelay>
+      <notifyRequisitionerDelay>false</notifyRequisitionerDelay>
+      <allowanceAuthorityTime>3600</allowanceAuthorityTime>
+      <frequenceAuthorityTime>3600</frequenceAuthorityTime>
+      <allowanceRequisitionerTime>0</allowanceRequisitionerTime>
+      <frequenceRequisitionerTime>0</frequenceRequisitionerTime>
+      <transferAttachments>false</transferAttachments>
+      <subProcessId></subProcessId>
+      <formFolder>0</formFolder>
+      <notifyAuthorityFollowUp>false</notifyAuthorityFollowUp>
+      <notifyRequisitionerFollowUp>false</notifyRequisitionerFollowUp>
+      <automatic>false</automatic>
+      <positionX>110</positionX>
+      <positionY>160</positionY>
+      <forecastedEffortType>0</forecastedEffortType>
+      <forecastedEffort>0</forecastedEffort>
+      <notifyManagerFollowUp>false</notifyManagerFollowUp>
+      <notifyManagerDelay>false</notifyManagerDelay>
+      <allowanceManagerTime>0</allowanceManagerTime>
+      <frequenceManagerTime>0</frequenceManagerTime>
+      <inhibitTransfer>false</inhibitTransfer>
+      <periodId></periodId>
+      <stateType>0</stateType>
+      <bpmnType>10</bpmnType>
+      <counterSign>false</counterSign>
+      <digitalSignature>false</digitalSignature>
+      <noticeExpirationAuthorityTime>0</noticeExpirationAuthorityTime>
+      <noticeExpirationRequisitionerTime>0</noticeExpirationRequisitionerTime>
+      <noticeExpirationManagerTime>0</noticeExpirationManagerTime>
+      <signalId>0</signalId>
+      <openInstances>0</openInstances>
+      <destinationStates/>
+    </ProcessState>
+    <ProcessState>
+      <processStatePK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <sequence>9</sequence>
+      </processStatePK>
+      <stateName>Fim</stateName>
+      <stateDescription>Fim</stateDescription>
+      <instruction>Atividade final do processo</instruction>
+      <deadlineTime>0</deadlineTime>
+      <joint>false</joint>
+      <agreementPercentage>0</agreementPercentage>
+      <engineAllocationId></engineAllocationId>
+      <engineAllocationConfiguration></engineAllocationConfiguration>
+      <selectColleague>1</selectColleague>
+      <initialState>false</initialState>
+      <notifyAuthorityDelay>true</notifyAuthorityDelay>
+      <notifyRequisitionerDelay>false</notifyRequisitionerDelay>
+      <allowanceAuthorityTime>0</allowanceAuthorityTime>
+      <frequenceAuthorityTime>1</frequenceAuthorityTime>
+      <allowanceRequisitionerTime>0</allowanceRequisitionerTime>
+      <frequenceRequisitionerTime>0</frequenceRequisitionerTime>
+      <transferAttachments>false</transferAttachments>
+      <subProcessId></subProcessId>
+      <formFolder>0</formFolder>
+      <notifyAuthorityFollowUp>false</notifyAuthorityFollowUp>
+      <notifyRequisitionerFollowUp>false</notifyRequisitionerFollowUp>
+      <automatic>false</automatic>
+      <positionX>490</positionX>
+      <positionY>160</positionY>
+      <forecastedEffortType>0</forecastedEffortType>
+      <forecastedEffort>0</forecastedEffort>
+      <notifyManagerFollowUp>false</notifyManagerFollowUp>
+      <notifyManagerDelay>false</notifyManagerDelay>
+      <allowanceManagerTime>0</allowanceManagerTime>
+      <frequenceManagerTime>0</frequenceManagerTime>
+      <inhibitTransfer>false</inhibitTransfer>
+      <periodId></periodId>
+      <stateType>6</stateType>
+      <bpmnType>60</bpmnType>
+      <counterSign>false</counterSign>
+      <digitalSignature>false</digitalSignature>
+      <signalId>0</signalId>
+      <openInstances>0</openInstances>
+      <destinationStates/>
+    </ProcessState>
+    <ProcessState>
+      <processStatePK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <sequence>10</sequence>
+      </processStatePK>
+      <stateName>Cria plano de Ação</stateName>
+      <stateDescription>Cria plano de Ação</stateDescription>
+      <instruction></instruction>
+      <deadlineTime>0</deadlineTime>
+      <joint>false</joint>
+      <agreementPercentage>0</agreementPercentage>
+      <selectColleague>1</selectColleague>
+      <initialState>false</initialState>
+      <notifyAuthorityDelay>true</notifyAuthorityDelay>
+      <notifyRequisitionerDelay>false</notifyRequisitionerDelay>
+      <allowanceAuthorityTime>3600</allowanceAuthorityTime>
+      <frequenceAuthorityTime>3600</frequenceAuthorityTime>
+      <allowanceRequisitionerTime>0</allowanceRequisitionerTime>
+      <frequenceRequisitionerTime>0</frequenceRequisitionerTime>
+      <transferAttachments>false</transferAttachments>
+      <subProcessId></subProcessId>
+      <formFolder>0</formFolder>
+      <notifyAuthorityFollowUp>true</notifyAuthorityFollowUp>
+      <notifyRequisitionerFollowUp>false</notifyRequisitionerFollowUp>
+      <automatic>false</automatic>
+      <positionX>320</positionX>
+      <positionY>135</positionY>
+      <forecastedEffortType>0</forecastedEffortType>
+      <forecastedEffort>0</forecastedEffort>
+      <notifyManagerFollowUp>false</notifyManagerFollowUp>
+      <notifyManagerDelay>false</notifyManagerDelay>
+      <allowanceManagerTime>0</allowanceManagerTime>
+      <frequenceManagerTime>0</frequenceManagerTime>
+      <inhibitTransfer>false</inhibitTransfer>
+      <periodId></periodId>
+      <stateType>0</stateType>
+      <bpmnType>82</bpmnType>
+      <counterSign>false</counterSign>
+      <digitalSignature>false</digitalSignature>
+      <noticeExpirationAuthorityTime>0</noticeExpirationAuthorityTime>
+      <noticeExpirationRequisitionerTime>0</noticeExpirationRequisitionerTime>
+      <noticeExpirationManagerTime>0</noticeExpirationManagerTime>
+      <signalId>0</signalId>
+      <executionType>1</executionType>
+      <deadlineFieldName></deadlineFieldName>
+      <openInstances>0</openInstances>
+      <destinationStates/>
+    </ProcessState>
+    <ProcessState>
+      <processStatePK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <sequence>13</sequence>
+      </processStatePK>
+      <stateName>Intermediário</stateName>
+      <stateDescription>Intermediário</stateDescription>
+      <instruction>Evento intermediário do processo</instruction>
+      <deadlineTime>0</deadlineTime>
+      <joint>false</joint>
+      <agreementPercentage>0</agreementPercentage>
+      <engineAllocationId></engineAllocationId>
+      <engineAllocationConfiguration></engineAllocationConfiguration>
+      <selectColleague>1</selectColleague>
+      <initialState>false</initialState>
+      <notifyAuthorityDelay>true</notifyAuthorityDelay>
+      <notifyRequisitionerDelay>false</notifyRequisitionerDelay>
+      <allowanceAuthorityTime>1</allowanceAuthorityTime>
+      <frequenceAuthorityTime>1</frequenceAuthorityTime>
+      <allowanceRequisitionerTime>0</allowanceRequisitionerTime>
+      <frequenceRequisitionerTime>0</frequenceRequisitionerTime>
+      <transferAttachments>false</transferAttachments>
+      <subProcessId></subProcessId>
+      <formFolder>0</formFolder>
+      <notifyAuthorityFollowUp>true</notifyAuthorityFollowUp>
+      <notifyRequisitionerFollowUp>false</notifyRequisitionerFollowUp>
+      <automatic>false</automatic>
+      <positionX>396</positionX>
+      <positionY>200</positionY>
+      <forecastedEffortType>0</forecastedEffortType>
+      <forecastedEffort>0</forecastedEffort>
+      <notifyManagerFollowUp>false</notifyManagerFollowUp>
+      <notifyManagerDelay>false</notifyManagerDelay>
+      <frequenceManagerTime>0</frequenceManagerTime>
+      <inhibitTransfer>false</inhibitTransfer>
+      <periodId></periodId>
+      <stateType>0</stateType>
+      <bpmnType>43</bpmnType>
+      <counterSign>false</counterSign>
+      <digitalSignature>false</digitalSignature>
+      <signalId>0</signalId>
+      <parentSequence>10</parentSequence>
+      <openInstances>0</openInstances>
+      <destinationStates/>
+    </ProcessState>
+    <ProcessState>
+      <processStatePK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <sequence>15</sequence>
+      </processStatePK>
+      <stateName>Exclusivo</stateName>
+      <stateDescription>Exclusivo</stateDescription>
+      <joint>false</joint>
+      <selectColleague>1</selectColleague>
+      <initialState>false</initialState>
+      <transferAttachments>false</transferAttachments>
+      <subProcessId></subProcessId>
+      <formFolder>0</formFolder>
+      <automatic>true</automatic>
+      <positionX>180</positionX>
+      <positionY>119</positionY>
+      <inhibitTransfer>false</inhibitTransfer>
+      <stateType>1</stateType>
+      <bpmnType>120</bpmnType>
+      <digitalSignature>false</digitalSignature>
+      <signalId>0</signalId>
+      <openInstances>0</openInstances>
+      <destinationStates/>
+    </ProcessState>
+    <ProcessState>
+      <processStatePK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <sequence>17</sequence>
+      </processStatePK>
+      <stateName>Fim</stateName>
+      <stateDescription>Fim</stateDescription>
+      <instruction>Atividade final do processo</instruction>
+      <deadlineTime>0</deadlineTime>
+      <joint>false</joint>
+      <agreementPercentage>0</agreementPercentage>
+      <engineAllocationId></engineAllocationId>
+      <engineAllocationConfiguration></engineAllocationConfiguration>
+      <selectColleague>1</selectColleague>
+      <initialState>false</initialState>
+      <notifyAuthorityDelay>true</notifyAuthorityDelay>
+      <notifyRequisitionerDelay>false</notifyRequisitionerDelay>
+      <allowanceAuthorityTime>0</allowanceAuthorityTime>
+      <frequenceAuthorityTime>1</frequenceAuthorityTime>
+      <allowanceRequisitionerTime>0</allowanceRequisitionerTime>
+      <frequenceRequisitionerTime>0</frequenceRequisitionerTime>
+      <transferAttachments>false</transferAttachments>
+      <subProcessId></subProcessId>
+      <formFolder>0</formFolder>
+      <notifyAuthorityFollowUp>false</notifyAuthorityFollowUp>
+      <notifyRequisitionerFollowUp>false</notifyRequisitionerFollowUp>
+      <automatic>false</automatic>
+      <positionX>192</positionX>
+      <positionY>260</positionY>
+      <forecastedEffortType>0</forecastedEffortType>
+      <forecastedEffort>0</forecastedEffort>
+      <notifyManagerFollowUp>false</notifyManagerFollowUp>
+      <notifyManagerDelay>false</notifyManagerDelay>
+      <allowanceManagerTime>0</allowanceManagerTime>
+      <frequenceManagerTime>0</frequenceManagerTime>
+      <inhibitTransfer>false</inhibitTransfer>
+      <periodId></periodId>
+      <stateType>6</stateType>
+      <bpmnType>60</bpmnType>
+      <counterSign>false</counterSign>
+      <digitalSignature>false</digitalSignature>
+      <signalId>0</signalId>
+      <openInstances>0</openInstances>
+      <destinationStates/>
+    </ProcessState>
+  </list>
+  <list>
+    <ConditionProcessState>
+      <conditionProcessStatePK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <sequence>15</sequence>
+        <expressionOrder>1</expressionOrder>
+      </conditionProcessStatePK>
+      <condition>hAPI.getCardValue("desvio") == "sim"</condition>
+      <destinationSequenceId>17</destinationSequenceId>
+      <conditionType>0</conditionType>
+    </ConditionProcessState>
+    <ConditionProcessState>
+      <conditionProcessStatePK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <sequence>15</sequence>
+        <expressionOrder>2</expressionOrder>
+      </conditionProcessStatePK>
+      <condition>hAPI.getCardValue("desvio") == "não"</condition>
+      <destinationSequenceId>10</destinationSequenceId>
+      <conditionType>0</conditionType>
+    </ConditionProcessState>
+  </list>
+  <list>
+    <ProcessLink>
+      <processLinkPK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <linkSequence>12</linkSequence>
+      </processLinkPK>
+      <actionLabel></actionLabel>
+      <returnPermited>false</returnPermited>
+      <initialStateSequence>10</initialStateSequence>
+      <finalStateSequence>9</finalStateSequence>
+      <returnLabel></returnLabel>
+      <automaticLink>false</automaticLink>
+      <defaultLink>false</defaultLink>
+      <type>0</type>
+      <name></name>
+    </ProcessLink>
+    <ProcessLink>
+      <processLinkPK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <linkSequence>14</linkSequence>
+      </processLinkPK>
+      <actionLabel></actionLabel>
+      <returnPermited>false</returnPermited>
+      <initialStateSequence>13</initialStateSequence>
+      <finalStateSequence>9</finalStateSequence>
+      <returnLabel></returnLabel>
+      <automaticLink>false</automaticLink>
+      <defaultLink>false</defaultLink>
+      <type>0</type>
+      <name></name>
+    </ProcessLink>
+    <ProcessLink>
+      <processLinkPK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <linkSequence>16</linkSequence>
+      </processLinkPK>
+      <actionLabel></actionLabel>
+      <returnPermited>false</returnPermited>
+      <initialStateSequence>15</initialStateSequence>
+      <finalStateSequence>10</finalStateSequence>
+      <returnLabel></returnLabel>
+      <automaticLink>false</automaticLink>
+      <defaultLink>false</defaultLink>
+      <type>0</type>
+      <name></name>
+    </ProcessLink>
+    <ProcessLink>
+      <processLinkPK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <linkSequence>18</linkSequence>
+      </processLinkPK>
+      <actionLabel></actionLabel>
+      <returnPermited>false</returnPermited>
+      <initialStateSequence>15</initialStateSequence>
+      <finalStateSequence>17</finalStateSequence>
+      <returnLabel></returnLabel>
+      <automaticLink>false</automaticLink>
+      <defaultLink>false</defaultLink>
+      <type>0</type>
+      <name></name>
+    </ProcessLink>
+    <ProcessLink>
+      <processLinkPK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <linkSequence>19</linkSequence>
+      </processLinkPK>
+      <actionLabel></actionLabel>
+      <returnPermited>false</returnPermited>
+      <initialStateSequence>4</initialStateSequence>
+      <finalStateSequence>15</finalStateSequence>
+      <returnLabel></returnLabel>
+      <automaticLink>false</automaticLink>
+      <defaultLink>false</defaultLink>
+      <type>0</type>
+      <name></name>
+    </ProcessLink>
+  </list>
+  <list/>
+  <list>
+    <WorkflowProcessEvent>
+      <workflowProcessEventPK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <eventId>servicetask10</eventId>
+      </workflowProcessEventPK>
+      <eventDescription>function servicetask10(attempt, message) {
+    log.info("=================servicetask10 - Cartão Alerta SSBET ============");
+
+    var campoDecisao = hAPI.getCardValue("desvio");
+    log.info("valor de campoDecisao: " + campoDecisao);
+
+    /* condição abaixo verifica com base no campo "desvio"  do item 6 se será necessário gerar plano de ação*/
+
+    if (campoDecisao == "não") {
+        log.info("condição verdadeira servicetask10");
+
+        // //Campos do Cartão Alerta
+        var processID = hAPI.getCardValue("processID");
+        var TPLANO = hAPI.getCardValue("tipoPlano");
+        var EMP = hAPI.getCardValue("empresaEmitente");
+        var SECAO = hAPI.getCardValue("secaoOcorrencia");
+        var DTOCORR = hAPI.getCardValue("dataEmissao");
+        var idGestorArea = hAPI.getCardValue("gerenciaOcorrencia");
+        var gestorArea = hAPI.getCardValue("MatriculaResparea") + " - " + hAPI.getCardValue("gerenciaOcorrencia");
+        var Responsavel = hAPI.getCardValue("matriculaLider"); //groupPK.groupId - idGestorArea
+
+        var campoCheckbox1 = hAPI.getCardValue("TipoComunicacao_1");
+        var campoCheckbox3 = hAPI.getCardValue("TipoComunicacao_3");
+        var campoCheckbox4 = hAPI.getCardValue("TipoComunicacao_4");
+        var campoCheckbox5 = hAPI.getCardValue("TipoComunicacao_5");
+        var campoCheckbox6 = hAPI.getCardValue("TipoComunicacao_6");
+        var ResponsavelDesvio = hAPI.getCardValue("Resparea");
+
+        // var IDENTIFICADO = hAPI.getCardValue("identificado");
+        var ACAO = hAPI.getCardValue("acaoTomada");
+        var ACAO2 = hAPI.getCardValue("acaoNecessaria");
+        var SUGESTAO = hAPI.getCardValue("acaoNecessaria");
+        var DESVIO = hAPI.getCardValue("desvio");
+        var SOLICITACAO = hAPI.getCardValue("WKNumProcess");
+
+        var titulo = TPLANO + " - " + DTOCORR + " - " + EMP;
+        var processo = "Plano_Ação_SSBET";
+        var numAtividade = 0;
+        var comentario = 'Solicitação iniciada através do Cartão Alerta ' + processID;
+
+        var users = new java.util.ArrayList();
+        users.clear();
+        users.add(Responsavel);
+
+
+        var formData = new java.util.HashMap();
+        //formData.put("WKUser", idGestorArea);
+        formData.put("tipoPlano", TPLANO);
+        formData.put("empresa", EMP);
+        formData.put("area", SECAO);
+        formData.put("dtOcorrencia", DTOCORR);
+        formData.put("idGestorArea", idGestorArea);
+        formData.put("gestorArea", gestorArea);
+        formData.put("AutomaticCreate", "1");
+        formData.put("Resp", idGestorArea);
+        formData.put("Solicitacao_vinculada", processID);
+        formData.put("respPlanoAcao", gestorArea);
+        // formData.put("Cartao_Alerta", processID);
+        formData.put("tituloPlano", titulo);
+
+        // formData.put("identificado", IDENTIFICADO);
+        formData.put("acao", ACAO);
+        formData.put("sugestao", SUGESTAO);
+        formData.put("desvio", DESVIO);
+
+        formData.put("option1", campoCheckbox6);
+        formData.put("option2", campoCheckbox1);
+        formData.put("option3", campoCheckbox3);
+        formData.put("option4", campoCheckbox4);
+        formData.put("option5", campoCheckbox5);
+
+        formData.put("respAcaoTB___1", ResponsavelDesvio);
+        formData.put("dtAcaoTB___1", DTOCORR);
+        formData.put("idFluigAcaoTB___1", ACAO);
+        formData.put("descAcaoTB___1", ACAO2);
+
+        formData.put("tituloPlano", titulo);
+
+
+        /* function getChildrenIndex() {
+    
+            var numProcess = getValue("WKNumProces");
+            var cardData = hAPI.getCardData(numProcess);
+            var iterator = cardData.keySet().iterator();
+        
+            if (tablename === 'dadosenvolvidos') {
+                var itemsIndexes = [];
+        
+                while (iterator.hasNext()) {
+                    var key = iterator.next();
+        
+                    if (key.match(/saldo___/)) {
+                        itemsIndexes.push(key.split("___")[1]);
+                    }
+                }
+                return itemsIndexes;
+            }
+        } */
+
+        // hAPI.startProcess(processo, 0, users, comentario, true, formData, false);
+    }
+}
+
+
+</eventDescription>
+    </WorkflowProcessEvent>
+  </list>
+  <list/>
+  <list>
+    <SwimLane>
+      <swimLanePK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <sequence>1</sequence>
+      </swimLanePK>
+      <stateName>Pool</stateName>
+      <positionX>40</positionX>
+      <positionY>40</positionY>
+      <color>FFFFFF</color>
+      <height>301</height>
+      <width>591</width>
+      <type>1</type>
+      <parentSequence>0</parentSequence>
+    </SwimLane>
+  </list>
+  <list/>
+  <list/>
+  <list>
+    <ProcessLinkBend>
+      <processLinkBendPK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <linkSequence>14</linkSequence>
+        <bendSequence>1</bendSequence>
+      </processLinkBendPK>
+      <positionX>507</positionX>
+      <positionY>214</positionY>
+    </ProcessLinkBend>
+    <ProcessLinkBend>
+      <processLinkBendPK>
+        <companyId>1</companyId>
+        <processId>testes</processId>
+        <version>7</version>
+        <linkSequence>14</linkSequence>
+        <bendSequence>2</bendSequence>
+      </processLinkBendPK>
+      <positionX>507</positionX>
+      <positionY>205</positionY>
+    </ProcessLinkBend>
+  </list>
+  <list/>
+  <list/>
+  <list/>
+  <list>
+    <ProcessStateService>
+      <id>1729</id>
+      <companyId>1</companyId>
+      <processId>testes</processId>
+      <version>7</version>
+      <sequence>10</sequence>
+      <attempts>0</attempts>
+      <sucessFullMessage>Integração executada com sucesso</sucessFullMessage>
+      <serviceName></serviceName>
+      <frequency>1</frequency>
+      <frequencyType>0</frequencyType>
+    </ProcessStateService>
+  </list>
+  <list/>
+  <list/>
+  <list/>
+  <list/>
+</list>

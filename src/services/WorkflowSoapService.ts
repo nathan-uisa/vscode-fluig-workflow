@@ -31,7 +31,8 @@ export class WorkflowSoapService {
         'Content-Type': 'text/xml; charset=utf-8',
         'SOAPAction': action
       },
-      body: envelope
+      body: envelope,
+      signal: AbortSignal.timeout(30000)
     });
 
     const responseText = await response.text();

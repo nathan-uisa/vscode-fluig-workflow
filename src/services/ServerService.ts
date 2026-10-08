@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 import { FluigServer } from '../models/Server';
 
 export class ServerService {
@@ -8,7 +10,15 @@ export class ServerService {
   constructor(private context: vscode.ExtensionContext) {}
 
   public getServers(): FluigServer[] {
-    return this.context.globalState.get<FluigServer[]>(ServerService.STORAGE_KEY, []);
+    const saved = this.context.globalState.get<FluigServer[]>(ServerService.STORAGE_KEY, []);
+    const envServer = this.getServerFromWorkspaceEnv();
+    if (envServer) {
+      const exists = saved.some(s => s.baseUrl === envServer.baseUrl && s.username === envServer.username);
+      if (!exists) {
+        return [envServer, ...saved];
+      }
+    }
+    return saved;
   }
 
   public async saveServer(server: FluigServer): Promise<void> {
@@ -55,6 +65,48 @@ export class ServerService {
       }
     }
     return servers.find(s => s.isDefault) || servers[0];
+  }
+
+  private getServerFromWorkspaceEnv(): FluigServer | undefined {
+    try {
+      const folders = vscode.workspace.workspaceFolders;
+      if (!folders || folders.length === 0) return undefined;
+
+      const envPath = path.join(folders[0].uri.fsPath, '.env');
+      if (!fs.existsSync(envPath)) return undefined;
+
+      const content = fs.readFileSync(envPath, 'utf-8');
+      const env: Record<string, string> = {};
+      for (const line of content.split(/\r?\n/)) {
+        const idx = line.indexOf('=');
+        if (idx > 0) {
+          const key = line.substring(0, idx).trim();
+          const val = line.substring(idx + 1).trim();
+          if (key && val) env[key] = val;
+        }
+      }
+
+      const url = env['URL_SERVIDOR'] || env['FLUIG_URL'] || env['SERVER_URL'];
+      const user = env['USER'] || env['FLUIG_USER'] || env['USERNAME'];
+      const pass = env['PASS'] || env['FLUIG_PASS'] || env['PASSWORD'];
+      const companyId = parseInt(env['COMPANY_ID'] || env['FLUIG_COMPANY_ID'] || '1', 10);
+
+      if (url && user) {
+        return {
+          id: 'workspace_env_server',
+          name: 'Servidor (.env Workspace)',
+          baseUrl: url.replace(/\/$/, ''),
+          companyId: isNaN(companyId) ? 1 : companyId,
+          username: user,
+          password: pass || '',
+          userCode: env['COLLEAGUE_ID'] || env['USER_CODE'] || user,
+          isDefault: true
+        };
+      }
+    } catch {
+      // Ignora erro ao ler .env
+    }
+    return undefined;
   }
 
   public async promptAddServer(): Promise<FluigServer | undefined> {

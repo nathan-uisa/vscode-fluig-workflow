@@ -213,7 +213,29 @@ export class WorkflowSoapService {
     return !response.includes('<faultstring>');
   }
 
-  private escapeXml(unsafe: string): string {
+  /**
+   * Exporta (baixa) a definição completa do processo do Fluig em formato ECM30 XML
+   */
+  public async exportProcess(processId: string): Promise<string> {
+    const token = await this.getToken();
+    const body = `<ws:exportProcess>
+      <username>${this.escapeXml(token)}</username>
+      <password></password>
+      <companyId>${this.server.companyId}</companyId>
+      <processId>${this.escapeXml(processId)}</processId>
+    </ws:exportProcess>`;
+
+    const xml = await this.callSoap('/webdesk/WorkflowEngineService', 'exportProcess', body);
+    const match = xml.match(/<result>(.*?)<\/result>/s);
+    if (!match || !match[1].trim()) {
+      throw new Error(`Processo ${processId} não foi encontrado ou não retornou dados no servidor Fluig.`);
+    }
+
+    // Desescapa entidades XML retornadas dentro da tag <result>
+    return this.unescapeXml(match[1].trim());
+  }
+
+  public escapeXml(unsafe: string): string {
     return unsafe.replace(/[<>&'"]/g, c => {
       switch (c) {
         case '<': return '&lt;';
@@ -224,6 +246,16 @@ export class WorkflowSoapService {
         default: return c;
       }
     });
+  }
+
+  public unescapeXml(str: string): string {
+    if (!str) return '';
+    return str
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'");
   }
 
   private parseProcessList(xml: string): ProcessItemSummary[] {

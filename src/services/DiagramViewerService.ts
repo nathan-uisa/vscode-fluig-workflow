@@ -395,8 +395,146 @@ function servicetask(attempt, message) {
     }
     header += '>';
 
-    const body = defMatch[0].substring(defMatch[0].indexOf('>') + 1, defMatch[0].lastIndexOf('</'));
+    let body = defMatch[0].substring(defMatch[0].indexOf('>') + 1, defMatch[0].lastIndexOf('</'));
+    body = this.repairWaypoints(body);
     return `<?xml version="1.0" encoding="UTF-8"?>\n${header}\n${body}\n</bpmn2:definitions>`;
+  }
+
+  public static calculateWaypoints(
+    source: { x: number; y: number; width: number; height: number },
+    target: { x: number; y: number; width: number; height: number }
+  ): Array<{ x: number; y: number }> {
+    const srcCenter = { x: source.x + source.width / 2, y: source.y + source.height / 2 };
+    const tgtCenter = { x: target.x + target.width / 2, y: target.y + target.height / 2 };
+
+    const dx = tgtCenter.x - srcCenter.x;
+    const dy = tgtCenter.y - srcCenter.y;
+
+    let startX: number;
+    let startY: number;
+    let endX: number;
+    let endY: number;
+
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      if (dx >= 0) {
+        startX = source.x + source.width;
+        startY = srcCenter.y;
+        endX = target.x;
+        endY = tgtCenter.y;
+      } else {
+        startX = source.x;
+        startY = srcCenter.y;
+        endX = target.x + target.width;
+        endY = tgtCenter.y;
+      }
+    } else {
+      if (dy >= 0) {
+        startX = srcCenter.x;
+        startY = source.y + source.height;
+        endX = tgtCenter.x;
+        endY = target.y;
+      } else {
+        startX = srcCenter.x;
+        startY = source.y;
+        endX = tgtCenter.x;
+        endY = target.y + target.height;
+      }
+    }
+
+    const points: Array<{ x: number; y: number }> = [
+      { x: Math.round(startX), y: Math.round(startY) }
+    ];
+
+    if (Math.abs(startX - endX) > 10 && Math.abs(startY - endY) > 10) {
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        const midX = Math.round((startX + endX) / 2);
+        points.push({ x: midX, y: Math.round(startY) });
+        points.push({ x: midX, y: Math.round(endY) });
+      } else {
+        const midY = Math.round((startY + endY) / 2);
+        points.push({ x: Math.round(startX), y: midY });
+        points.push({ x: Math.round(endX), y: midY });
+      }
+    }
+
+    points.push({ x: Math.round(endX), y: Math.round(endY) });
+    return points;
+  }
+
+  private static repairWaypoints(body: string): string {
+    const shapes: Record<string, { x: number; y: number; width: number; height: number }> = {};
+    const shapeRegex = /<bpmndi:BPMNShape\b([^>]*)>([\s\S]*?)<\/bpmndi:BPMNShape>/g;
+    let sMatch: RegExpExecArray | null;
+    while ((sMatch = shapeRegex.exec(body)) !== null) {
+      const shapeAttrs = sMatch[1];
+      const shapeInner = sMatch[2];
+      const elemId = shapeAttrs.match(/\bbpmnElement=["']([^"']+)["']/)?.[1];
+      const boundsMatch = shapeInner.match(/<dc:Bounds\b([^>]*)\/?>/);
+      if (elemId && boundsMatch) {
+        const bAttrs = boundsMatch[1];
+        const x = parseFloat(bAttrs.match(/\bx=["']([^"']+)["']/)?.[1] || '0');
+        const y = parseFloat(bAttrs.match(/\by=["']([^"']+)["']/)?.[1] || '0');
+        const width = parseFloat(bAttrs.match(/\bwidth=["']([^"']+)["']/)?.[1] || '100');
+        const height = parseFloat(bAttrs.match(/\bheight=["']([^"']+)["']/)?.[1] || '80');
+        shapes[elemId] = { x, y, width, height };
+      }
+    }
+
+    const flows: Record<string, { sourceRef: string; targetRef: string }> = {};
+    const flowRegex = /<bpmn2?:sequenceFlow\b([^>]*)\/?>/g;
+    let fMatch: RegExpExecArray | null;
+    while ((fMatch = flowRegex.exec(body)) !== null) {
+      const attrs = fMatch[1];
+      const flowId = attrs.match(/\bid=["']([^"']+)["']/)?.[1];
+      const sourceRef = attrs.match(/\bsourceRef=["']([^"']+)["']/)?.[1];
+      const targetRef = attrs.match(/\btargetRef=["']([^"']+)["']/)?.[1];
+      if (flowId && sourceRef && targetRef) {
+        flows[flowId] = { sourceRef, targetRef };
+      }
+    }
+
+    // Corrige edges existentes com waypoints zerados ou ausentes
+    body = body.replace(/<bpmndi:BPMNEdge\b([^>]*)>([\s\S]*?)<\/bpmndi:BPMNEdge>/g, (fullMatch, edgeAttrs, edgeInner) => {
+      const flowId = edgeAttrs.match(/\bbpmnElement=["']([^"']+)["']/)?.[1];
+      if (!flowId || !flows[flowId]) return fullMatch;
+
+      const flow = flows[flowId];
+      const srcShape = shapes[flow.sourceRef];
+      const tgtShape = shapes[flow.targetRef];
+      if (!srcShape || !tgtShape) return fullMatch;
+
+      const wpMatches = Array.from(edgeInner.matchAll(/<di:waypoint\b([^>]*)\/?>/g));
+      const hasValidWaypoints = wpMatches.length >= 2 && wpMatches.some(wp => {
+        const x = parseFloat((wp as any)[1].match(/\bx=["']([^"']+)["']/)?.[1] || '0');
+        const y = parseFloat((wp as any)[1].match(/\by=["']([^"']+)["']/)?.[1] || '0');
+        return x > 0 || y > 0;
+      });
+
+      if (hasValidWaypoints) {
+        return fullMatch;
+      }
+
+      const calculatedPts = this.calculateWaypoints(srcShape, tgtShape);
+      const newWpXml = calculatedPts.map(p => `\n        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('');
+      return `<bpmndi:BPMNEdge ${edgeAttrs}>${newWpXml}\n      </bpmndi:BPMNEdge>`;
+    });
+
+    // Se houver algum fluxo sem BPMNEdge, adiciona
+    for (const [flowId, flow] of Object.entries(flows)) {
+      if (!body.includes(`bpmnElement="${flowId}"`)) {
+        const src = shapes[flow.sourceRef];
+        const tgt = shapes[flow.targetRef];
+        if (src && tgt) {
+          const pts = this.calculateWaypoints(src, tgt);
+          const edgeXml = `      <bpmndi:BPMNEdge id="BPMNEdge_${flowId}" bpmnElement="${flowId}">
+${pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n')}
+      </bpmndi:BPMNEdge>\n`;
+          body = body.replace('</bpmndi:BPMNPlane>', `${edgeXml}    </bpmndi:BPMNPlane>`);
+        }
+      }
+    }
+
+    return body;
   }
 
   /**
@@ -999,7 +1137,8 @@ function servicetask(attempt, message) {
     const vscode = acquireVsCodeApi();
 
     const rawBase64 = "${safeBpmnXml}";
-    const initialBpmnXml = atob(rawBase64);
+    const bytes = Uint8Array.from(atob(rawBase64), c => c.charCodeAt(0));
+    const initialBpmnXml = new TextDecoder('utf-8').decode(bytes);
 
     let modeler = null;
     let currentMode = 'modeler'; // 'modeler' ou 'svg'

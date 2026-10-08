@@ -5,6 +5,7 @@ import { ServerService } from './ServerService';
 import { WorkflowSoapService } from './WorkflowSoapService';
 import { WorkflowRestService } from './WorkflowRestService';
 import { Ecm30GeneratorService } from './Ecm30GeneratorService';
+import { DiagramViewerService } from './DiagramViewerService';
 import { ProcessItemSummary } from '../models/Process';
 
 export class ProcessImportService {
@@ -318,11 +319,21 @@ export class ProcessImportService {
       </bpmndi:BPMNShape>\n`;
     });
 
+    const stateMap: Record<string, { x: number; y: number; width: number; height: number }> = {};
+    states.forEach(st => {
+      stateMap[st.id] = st;
+    });
+
     links.forEach(lk => {
-      diShapesXml += `      <bpmndi:BPMNEdge id="BPMNEdge_${lk.id}" bpmnElement="${lk.id}">
-        <di:waypoint x="0" y="0"/>
-        <di:waypoint x="0" y="0"/>
-      </bpmndi:BPMNEdge>\n`;
+      const src = stateMap[lk.sourceRef];
+      const tgt = stateMap[lk.targetRef];
+      let waypointsXml = '        <di:waypoint x="0" y="0"/>\n        <di:waypoint x="0" y="0"/>';
+      if (src && tgt) {
+        const pts = DiagramViewerService.calculateWaypoints(src, tgt);
+        waypointsXml = pts.map(p => `        <di:waypoint x="${p.x}" y="${p.y}"/>`).join('\n');
+      }
+
+      diShapesXml += `      <bpmndi:BPMNEdge id="BPMNEdge_${lk.id}" bpmnElement="${lk.id}">\n${waypointsXml}\n      </bpmndi:BPMNEdge>\n`;
     });
 
     return `<?xml version="1.0" encoding="ASCII"?>

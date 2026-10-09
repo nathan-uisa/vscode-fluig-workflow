@@ -51,7 +51,7 @@ export class ProcessImportService {
           processes.map(p => ({
             label: p.processId,
             description: p.processDescription,
-            detail: `Versão: ${p.version}`,
+            detail: (p.version && p.version > 0) ? `Versão: ${p.version}` : undefined,
             process: p
           })),
           { placeHolder: 'Selecione o processo que deseja importar para o projeto local' }

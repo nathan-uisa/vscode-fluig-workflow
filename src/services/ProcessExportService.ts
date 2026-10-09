@@ -70,7 +70,7 @@ export class ProcessExportService {
           const soapService = new WorkflowSoapService(server);
 
           progress.report({ message: 'Verificando versão existente no servidor...' });
-          const currentVersion = await soapService.getProcessVersion(processId);
+          const currentVersion = await soapService.getProcessVersion(processId, true);
           const isNewProcess = currentVersion === 0;
 
           if (!isNewProcess) {
@@ -101,7 +101,7 @@ export class ProcessExportService {
             await soapService.releaseProcess(processId);
           }
 
-          const newVersion = await soapService.getProcessVersion(processId);
+          const newVersion = await soapService.getProcessVersion(processId, true);
 
           vscode.window.showInformationMessage(
             `Processo ${processId} exportado com sucesso para ${server.name}! (Versão: ${newVersion || currentVersion + 1})`

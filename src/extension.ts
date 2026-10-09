@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ServerService } from './services/ServerService';
+import { WorkflowSoapService } from './services/WorkflowSoapService';
 import { ProcessExportService } from './services/ProcessExportService';
 import { ProcessImportService } from './services/ProcessImportService';
 import { Ecm30GeneratorService } from './services/Ecm30GeneratorService';
@@ -16,6 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
   outputChannel.appendLine('Extensão Fluig Workflow ativada.');
 
   // Inicializa Serviços
+  WorkflowSoapService.initialize(context);
   DiagramViewerService.initialize(context);
   FluigTypingsService.initialize(context);
   FluigTypingsService.ensureTypings().catch(() => {});
@@ -95,8 +97,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // 4. Listar / Atualizar Processos
   const listProcessesCmd = vscode.commands.registerCommand('fluigWorkflow.listProcesses', () => {
-    processTreeProvider.refresh();
-    vscode.window.showInformationMessage('Lista de processos atualizada.');
+    processTreeProvider.refresh(true);
+    vscode.window.showInformationMessage('Atualizando lista e versões dos processos do servidor...');
   });
 
   // 5. Importar Processo

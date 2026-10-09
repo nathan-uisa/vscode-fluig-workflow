@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import { FluigServer } from '../models/Server';
 import { ProcessItemSummary } from '../models/Process';
 
@@ -9,6 +10,61 @@ export interface SoapAttachment {
 }
 
 export class WorkflowSoapService {
+  private static versionCache: Map<string, number> = new Map();
+  private static storage?: vscode.Memento;
+
+  public static initialize(context: vscode.ExtensionContext): void {
+    this.storage = context.globalState;
+    const stored = context.globalState.get<Record<string, number>>('fluig_process_versions');
+    if (stored) {
+      for (const [k, v] of Object.entries(stored)) {
+        this.versionCache.set(k, v);
+      }
+    }
+  }
+
+  public static persistCache(): void {
+    if (this.storage) {
+      const obj: Record<string, number> = {};
+      for (const [k, v] of this.versionCache.entries()) {
+        obj[k] = v;
+      }
+      this.storage.update('fluig_process_versions', obj);
+    }
+  }
+
+  public static getCacheKey(server: FluigServer, processId: string): string {
+    return `${server.baseUrl}|${server.companyId}|${processId}`;
+  }
+
+  public static getCachedVersion(server: FluigServer, processId: string): number | undefined {
+    return this.versionCache.get(this.getCacheKey(server, processId));
+  }
+
+  public static setCachedVersion(server: FluigServer, processId: string, version: number): void {
+    if (version > 0) {
+      this.versionCache.set(this.getCacheKey(server, processId), version);
+    }
+  }
+
+  public static hasCachedVersion(server: FluigServer, processId: string): boolean {
+    return this.versionCache.has(this.getCacheKey(server, processId));
+  }
+
+  public static clearCache(server?: FluigServer): void {
+    if (!server) {
+      this.versionCache.clear();
+    } else {
+      const prefix = `${server.baseUrl}|${server.companyId}|`;
+      for (const key of Array.from(this.versionCache.keys())) {
+        if (key.startsWith(prefix)) {
+          this.versionCache.delete(key);
+        }
+      }
+    }
+    this.persistCache();
+  }
+
   constructor(private server: FluigServer) {}
 
   private async callSoap(
@@ -95,7 +151,11 @@ export class WorkflowSoapService {
   /**
    * Lista todos os processos disponíveis para exportação/importação
    */
-  public async getAllProcesses(): Promise<ProcessItemSummary[]> {
+  public async getAllProcesses(options?: {
+    resolveVersions?: boolean;
+    concurrency?: number;
+    onProgress?: (completed: number, total: number) => void;
+  }): Promise<ProcessItemSummary[]> {
     const token = await this.getToken();
     const body = `<ws:getAllProcessAvailableToExport>
       <username>${this.escapeXml(token)}</username>
@@ -104,13 +164,41 @@ export class WorkflowSoapService {
     </ws:getAllProcessAvailableToExport>`;
 
     const xml = await this.callSoap('/webdesk/WorkflowEngineService', 'getAllProcessAvailableToExport', body);
-    return this.parseProcessList(xml);
+    const items = this.parseProcessList(xml);
+
+    // Aplica versões já salvas no cache
+    for (const item of items) {
+      const cached = WorkflowSoapService.getCachedVersion(this.server, item.processId);
+      if (cached !== undefined && cached > 0) {
+        item.version = cached;
+      }
+    }
+
+    if (options?.resolveVersions) {
+      const ids = items.map(p => p.processId);
+      const versionsMap = await this.getProcessVersionsBatch(ids, options.concurrency ?? 25, options.onProgress);
+      for (const item of items) {
+        const v = versionsMap.get(item.processId);
+        if (v !== undefined && v > 0) {
+          item.version = v;
+        }
+      }
+    }
+
+    return items;
   }
 
   /**
    * Retorna a versão atual do processo cadastrado
    */
-  public async getProcessVersion(processId: string): Promise<number> {
+  public async getProcessVersion(processId: string, bypassCache = false): Promise<number> {
+    if (!bypassCache) {
+      const cached = WorkflowSoapService.getCachedVersion(this.server, processId);
+      if (cached !== undefined && cached > 0) {
+        return cached;
+      }
+    }
+
     const token = await this.getToken();
     const body = `<ws:getWorkFlowProcessVersion>
       <username>${this.escapeXml(token)}</username>
@@ -124,12 +212,76 @@ export class WorkflowSoapService {
       const match = xml.match(/<result>(.*?)<\/result>/s);
       if (match) {
         const v = parseInt(match[1].trim(), 10);
-        return isNaN(v) ? 0 : v;
+        const resolved = isNaN(v) ? 0 : v;
+        if (resolved > 0) {
+          WorkflowSoapService.setCachedVersion(this.server, processId, resolved);
+          WorkflowSoapService.persistCache();
+        }
+        return resolved;
       }
     } catch {
       return 0;
     }
     return 0;
+  }
+
+  /**
+   * Busca as versões de múltiplos processos em paralelo com limite de concorrência
+   */
+  public async getProcessVersionsBatch(
+    processIds: string[],
+    concurrency = 25,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<Map<string, number>> {
+    const results = new Map<string, number>();
+    const uncachedIds: string[] = [];
+
+    for (const id of processIds) {
+      const cached = WorkflowSoapService.getCachedVersion(this.server, id);
+      if (cached !== undefined && cached > 0) {
+        results.set(id, cached);
+      } else {
+        uncachedIds.push(id);
+      }
+    }
+
+    if (uncachedIds.length === 0) {
+      onProgress?.(processIds.length, processIds.length);
+      return results;
+    }
+
+    const token = await this.getToken();
+    let completed = processIds.length - uncachedIds.length;
+    onProgress?.(completed, processIds.length);
+
+    for (let i = 0; i < uncachedIds.length; i += concurrency) {
+      const chunk = uncachedIds.slice(i, i + concurrency);
+      await Promise.all(
+        chunk.map(async processId => {
+          try {
+            const body = `<ws:getWorkFlowProcessVersion>
+              <username>${this.escapeXml(token)}</username>
+              <password></password>
+              <companyId>${this.server.companyId}</companyId>
+              <processId>${this.escapeXml(processId)}</processId>
+            </ws:getWorkFlowProcessVersion>`;
+            const xml = await this.callSoap('/webdesk/WorkflowEngineService', 'getWorkFlowProcessVersion', body);
+            const match = xml.match(/<result>(.*?)<\/result>/s);
+            const v = match ? parseInt(match[1].trim(), 10) || 1 : 1;
+            results.set(processId, v);
+            WorkflowSoapService.setCachedVersion(this.server, processId, v);
+          } catch {
+            results.set(processId, 1);
+          } finally {
+            completed++;
+          }
+        })
+      );
+      WorkflowSoapService.persistCache();
+      onProgress?.(completed, processIds.length);
+    }
+
+    return results;
   }
 
   /**
@@ -269,13 +421,19 @@ export class WorkflowSoapService {
       const idMatch = content.match(/<processId>(.*?)<\/processId>/);
       const descMatch = content.match(/<processDescription>(.*?)<\/processDescription>/);
       const versionMatch = content.match(/<version>(.*?)<\/version>/);
+      const activeMatch = content.match(/<active>(.*?)<\/active>/);
 
       if (idMatch) {
+        const pId = idMatch[1].trim();
+        const cached = WorkflowSoapService.getCachedVersion(this.server, pId);
+        const parsedVer = versionMatch ? parseInt(versionMatch[1].trim(), 10) : 0;
+        const isActive = activeMatch ? activeMatch[1].trim().toLowerCase() === 'true' : true;
+
         items.push({
-          processId: idMatch[1].trim(),
-          processDescription: descMatch ? descMatch[1].trim() : idMatch[1].trim(),
-          version: versionMatch ? parseInt(versionMatch[1].trim(), 10) || 1 : 1,
-          active: true
+          processId: pId,
+          processDescription: descMatch ? descMatch[1].trim() : pId,
+          version: (cached && cached > 0) ? cached : (parsedVer > 0 ? parsedVer : 0),
+          active: isActive
         });
       }
     }
